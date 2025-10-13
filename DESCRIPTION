@@ -1,0 +1,15 @@
+Package: GenomeScaleEmbeddings
+Title: Exploring Genome Scale Embeddings Parquet Files
+Version: 0.0.0.9000
+Authors@R: c(
+    person(given = "Sounkou Mahamane", family = "Toure", email = "sounkoutoure@gmail.com", role = c("aut", "cre"))
+  )
+Description: Some explorations of the genomics embedding from the paper 
+          "Incorporating LLM Embeddings for Variation Across the Human Genome" 
+          <https://arxiv.org/html/2509.20702v1>
+Depends: R (>= 4.4.0)
+Imports: duckdbfs, ggplot2, pcaone, jsonlite
+License: LGPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
