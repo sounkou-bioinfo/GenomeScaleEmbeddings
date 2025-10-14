@@ -131,6 +131,7 @@ OpenRemoteParquetView <- function(
 #' @param batchSize Number of rows per batch
 #' @param embeddingDim Dimension of each embedding vector
 #' @param embeddingFile Path for houba mmatrix file
+#' @param overwrite Whether to overwrite existing houba file
 #' @return An object of class 'HoubaEmbeddings' with mmatrix, info data.frame, and houba file path
 #' @export
 writeEmbeddingsHoubaFromDuckDB <- function(
@@ -139,8 +140,12 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     embeddingCol = "embedding",
     batchSize = 100000,
     embeddingDim = 3072,
-    embeddingFile = gsub("\\.duckdb$", ".houba", dbPath)) {
+    embeddingFile = gsub("\\.duckdb$", ".houba", dbPath),
+    overwrite = FALSE) {
     if (!requireNamespace("houba", quietly = TRUE)) stop("houba package required.")
+    if (file.exists(embeddingFile) && !overwrite) {
+        stop("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
+    }
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = dbPath)
     n <- DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", tableName))$n
     # Get info column names from table

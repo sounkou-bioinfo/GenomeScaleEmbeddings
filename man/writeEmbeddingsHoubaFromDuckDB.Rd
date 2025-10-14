@@ -10,7 +10,8 @@ writeEmbeddingsHoubaFromDuckDB(
   embeddingCol = "embedding",
   batchSize = 1e+05,
   embeddingDim = 3072,
-  embeddingFile = gsub("\\\\.duckdb$", ".houba", dbPath)
+  embeddingFile = gsub("\\\\.duckdb$", ".houba", dbPath),
+  overwrite = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ writeEmbeddingsHoubaFromDuckDB(
 \item{embeddingDim}{Dimension of each embedding vector}
 
 \item{embeddingFile}{Path for houba mmatrix file}
+
+\item{overwrite}{Whether to overwrite existing houba file}
 }
 \value{
 An object of class 'HoubaEmbeddings' with mmatrix, info data.frame, and houba file path
