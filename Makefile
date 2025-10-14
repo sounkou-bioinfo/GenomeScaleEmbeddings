@@ -26,10 +26,10 @@ install_deps:
 install: build
 	R CMD INSTALL $(PKGNAME)_$(PKGVERS).tar.gz
 
-local_embeddings_duck: install
+local_embeddings.duckdb: install
 	R -e 'GenomeScaleEmbeddings::CopyParquetToDuckDB()'
 
-local_houba: local_embeddings_duck
+local_embeddings.houba: local_embeddings.duckdb
 	R -e 'GenomeScaleEmbeddings::writeEmbeddingsHoubaFromDuckDB()'
 
 clean:

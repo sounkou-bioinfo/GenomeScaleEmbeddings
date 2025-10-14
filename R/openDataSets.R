@@ -48,7 +48,6 @@ CopyParquetToDuckDB <- function(
             "'."
         )
         # peak at the data
-        print(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s LIMIT 5", table_name)))
         DBI::dbDisconnect(con)
     } else {
         message("Database file '", db_path, "' already exists. Skipping copy.")
