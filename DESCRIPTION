@@ -8,8 +8,9 @@ Description: Some explorations of the genomics embedding from the paper
           "Incorporating LLM Embeddings for Variation Across the Human Genome" 
           <https://arxiv.org/html/2509.20702v1>
 Depends: R (>= 4.4.0)
-Imports: duckdbfs, ggplot2, pcaone, jsonlite
+Imports: duckdb, duckplyr, ggplot2, pcaone, jsonlite, houba
 License: LGPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Remotes: HervePerdry/houba@ccaedbcf101c79423d914174e3902d9d5b79bcc4
