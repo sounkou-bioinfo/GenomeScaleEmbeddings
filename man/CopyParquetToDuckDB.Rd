@@ -7,7 +7,8 @@
 CopyParquetToDuckDB(
   db_path = "local_embeddings.duckdb",
   urlList = DatasetParquetUrlList(),
-  table_name = "embeddings"
+  table_name = "embeddings",
+  overwrite = FALSE
 )
 }
 \arguments{

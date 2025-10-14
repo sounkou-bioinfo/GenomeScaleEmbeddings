@@ -27,11 +27,14 @@ DatasetParquetUrlList <- function() {
 CopyParquetToDuckDB <- function(
     db_path = "local_embeddings.duckdb",
     urlList = DatasetParquetUrlList(),
-    table_name = "embeddings") {
+    table_name = "embeddings",
+    overwrite = FALSE) {
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path, overwrite = FALSE)
-    if (!file.exists(db_path) || overwrite) {
+    table_names <- DBI::dbListTables(con)
+    if (!table_name %in% table_names || overwrite) {
         sql <- sprintf(
-            "CREATE TABLE %s AS SELECT * FROM read_parquet(%s)",
+            "INSTALL httpfs; load httpfs;
+             CREATE TABLE %s AS SELECT * FROM read_parquet(%s)",
             table_name,
             paste0("['", paste(urlList, collapse = "','"), "']")
         )
@@ -44,6 +47,8 @@ CopyParquetToDuckDB <- function(
             db_path,
             "'."
         )
+        # peak at the data
+        print(DBI::dbGetQuery(con, sprintf("SELECT * FROM %s LIMIT 5", table_name)))
         DBI::dbDisconnect(con)
     } else {
         message("Database file '", db_path, "' already exists. Skipping copy.")
@@ -210,4 +215,31 @@ infoSummary <- function(infoMat) {
         chroms = base::unique(infoMat[, 1]),
         rsids = base::head(infoMat[, 5])
     )
+}
+
+
+#' kmeans using houba mmatrix via biganalytics
+#' @param embMat houba mmatrix path or bigmemory::big.matrix
+#' @param centers Number of centers (k)
+#' @param nstart Number of random starts
+#' @param iter.max Maximum number of iterations
+#' @return kmeans result object
+#' @export
+houbaKmeans <- function(embMat, centers = 2, nstart = 1, iter.max = 10) {
+    if (is.character(embMat)) {
+        # check descriptor file exists
+        if (!file.exists(embMat)) {
+            stop("Descriptor file does not exist: ", embMat)
+        }
+        descFile <- paste0(embMat, ".desc")
+        embMat <- bigmemory::attach.big.matrix(descFile)
+        message("Attached big.matrix from descriptor file: ", descFile)
+        message("Dimensions: ", paste(dim(embMat), collapse = " x "))
+    } else {
+        if (!inherits(embMat, "big.matrix")) {
+            stop("embMat must be a bigmemory::big.matrix or path to descriptor file.")
+        }
+    }
+    message("Running kmeans with centers=", centers, ", nstart=", nstart, ", iter.max=", iter.max)
+    biganalytics::bigkmeans(embMat, centers = centers, nstart = nstart, iter.max = iter.max)
 }
