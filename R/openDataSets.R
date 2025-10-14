@@ -142,6 +142,8 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     # Get info column names from table
     infoColNames <- setdiff(DBI::dbListFields(con, tableName), embeddingCol)
     embMat <- houba::mmatrix(datatype = "double", nrow = n, ncol = embeddingDim, filename = embeddingFile, readonly = FALSE)
+    # Create descriptor file for bigmemory compatibility
+    dscFile <- houba::descriptor.file(embMat)
     infoDf <- data.frame(matrix(nrow = n, ncol = length(infoColNames)))
     colnames(infoDf) <- infoColNames
     idx <- 1
@@ -171,7 +173,7 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     DBI::dbDisconnect(con)
     message("Done writing embeddings and info to houba mmatrix.")
     structure(
-        list(embeddings = embMat, info = infoDf, houba_file = embeddingFile),
+        list(embeddings = embMat, info = infoDf, houba_file = embeddingFile, descriptor_file = dscFile),
         class = "HoubaEmbeddings"
     )
 }
