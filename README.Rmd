@@ -103,13 +103,14 @@ plotDf <- plotDf |>
 # Set alpha = 0 for NA genes, 0.7 otherwise
 plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
 
-# Plot: NA genes are fully transparent
+# Plot: density contours for all, points for coffee SNPs only
 
-ggplot(plotDf, aes(x = PC1, y = PC2, color = gen, alpha = plot_alpha)) +
-  geom_point() +
-  labs(title = "PC1 vs PC2 colored by coffee consumption gene annotation") +
+ggplot(plotDf, aes(x = PC1, y = PC2)) +
+  stat_density_2d(aes(fill = ..level..), geom = "polygon", color = NA, alpha = 0.3) +
+  geom_point(data = subset(plotDf, !is.na(gen)), aes(color = gen), alpha = 0.7) +
+  labs(title = "PC1 vs PC2: coffee SNPs as points, others as density contours") +
   theme_minimal() +
-  guides(alpha = "none")
+  guides(fill = "none", color = guide_legend(title = "Gene annotation"))
 
 ```
 
