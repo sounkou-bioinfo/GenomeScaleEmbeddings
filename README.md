@@ -1,7 +1,14 @@
 
 # GenomeScaleEmbeddings
 
-## Load the package
+We explore the SNP-level LLM embeddings from the paper “Incorporating
+LLM Embeddings for Variation Across the Human Genome”. We use `duckdb`
+to download the embeddings from huggingFace, save them in
+[`houba`](github.com/HervePerdry/houba) memory-mapped matrices, and use
+[`bigPCACpp`](https://github.com/fbertran/bigPCAcpp/) to perform PCA and
+some explorations.
+
+## Load the packages
 
 ``` r
 library(GenomeScaleEmbeddings)
@@ -26,7 +33,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpGLfk1e/file8a2d8540da9b2.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmps6ucDx/file8a5ff195dec19.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -51,7 +58,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.045   0.005   0.036
+#>   0.024   0.007   0.028
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -68,7 +75,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.575   0.042   0.576
+#>   0.581   0.033   0.570
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -109,7 +116,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 357.518 114.896  54.729
+#> 358.806 112.452  54.725
 ```
 
 ## 5. Get PCA scores
@@ -183,10 +190,16 @@ ggplot() +
 
 <img src="docs/README-unnamed-chunk-9-1.png" width="100%" />
 
-------------------------------------------------------------------------
+## Notes
 
 - All file sizes are displayed after each step for transparency.
 - Remote parquet files are previewed before local processing.
 - For large datasets, consider subsampling for faster plotting.
 - Use `overwrite = FALSE` for DuckDB and houba steps to avoid slow
   download and reuse existing files.
+
+## References
+
+- The embeddings explored here were published by the group in:
+  - **Incorporating LLM Embeddings for Variation Across the Human
+    Genome** ([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1))

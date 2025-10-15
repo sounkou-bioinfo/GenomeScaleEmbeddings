@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 # GenomeScaleEmbeddings
 
 We explore the SNP-level LLM embeddings from the paper "Incorporating LLM Embeddings for Variation Across the Human Genome".
-We use `duckdb` to download the embeddings from huggingFace, save them in `houba` memory-mapped matrices, and use `bigPCACpp` to perform PCA and some explorations.
+We use `duckdb` to download the embeddings from huggingFace, save them in [`houba`](github.com/HervePerdry/houba) memory-mapped matrices, and use [`bigPCACpp`](https://github.com/fbertran/bigPCAcpp/) to perform PCA and some explorations.
 
 ## Load the packages
 
