@@ -26,7 +26,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmplge4aR/file888746b426b61.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpzD8owR/file88c3743bd89b3.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -51,7 +51,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.028   0.003   0.029
+#>   0.027   0.006   0.029
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -68,7 +68,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.578   0.037   0.572
+#>   0.562   0.044   0.568
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -109,7 +109,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 356.178 115.111  55.185
+#> 361.381 112.571  57.173
 ```
 
 ## 5. Get PCA scores
@@ -157,13 +157,16 @@ plotDf <- plotDf |>
 # Set alpha = 0 for NA genes, 0.7 otherwise
 plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
 
-# Plot: NA genes are fully transparent
+# Plot: coffee SNPs only, with gene annotation labels
+coffee_snps <- subset(plotDf, !is.na(gen))
 
-ggplot(plotDf, aes(x = PC1, y = PC2, color = gen, alpha = plot_alpha)) +
-  geom_point() +
-  labs(title = "PC1 vs PC2 colored by coffee consumption gene annotation") +
-  theme_minimal() +
-  guides(alpha = "none")
+p <- ggplot(coffee_snps, aes(x = PC1, y = PC2, color = gen)) +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(title = "PC1 vs PC2: coffee SNPs annotated by gene") +
+  theme_minimal()
+
+# Add text labels for gene annotation
+p + geom_text(aes(label = gen), hjust = 0, vjust = 0, size = 2, check_overlap = TRUE)
 ```
 
 <img src="docs/README-unnamed-chunk-9-1.png" width="100%" />

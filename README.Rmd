@@ -103,15 +103,16 @@ plotDf <- plotDf |>
 # Set alpha = 0 for NA genes, 0.7 otherwise
 plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
 
-# Plot: density contours for all, points for coffee SNPs only
+# Plot: coffee SNPs only, with gene annotation labels
+coffee_snps <- subset(plotDf, !is.na(gen))
 
-ggplot(plotDf, aes(x = PC1, y = PC2)) +
-  stat_density_2d(aes(fill = ..level..), geom = "polygon", color = NA, alpha = 0.3) +
-  geom_point(data = subset(plotDf, !is.na(gen)), aes(color = gen), alpha = 0.7) +
-  labs(title = "PC1 vs PC2: coffee SNPs as points, others as density contours") +
-  theme_minimal() +
-  guides(fill = "none", color = guide_legend(title = "Gene annotation"))
+p <- ggplot(coffee_snps, aes(x = PC1, y = PC2, color = gen)) +
+  geom_point(size = 2, alpha = 0.7) +
+  labs(title = "PC1 vs PC2: coffee SNPs annotated by gene") +
+  theme_minimal()
 
+# Add text labels for gene annotation
+p + geom_text(aes(label = gen), hjust = 0, vjust = 0, size = 2, check_overlap = TRUE)
 ```
 
 ---
