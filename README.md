@@ -14,7 +14,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpQ5ziQI/file8595a12ac264f.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmplkSstS/file85d9665415f18.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -37,9 +37,9 @@ system.time(
 
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
-#> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
+#> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
 #>    user  system elapsed 
-#>   0.050   0.003   0.181
+#>  73.564  23.484 109.037
 file.info("local_embeddings.duckdb")$size
 #> [1] 12128628736
 ```
@@ -51,18 +51,13 @@ system.time(
 
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
 )
-#> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
-#> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
-#> overwrite.
-#> Warning in mk.descriptor.file(object@file, object@dim[1], object@dim[2], :
-#> local_embeddings.houba.desc already exists.
 #> Writing 616386 rows in batches of 100000...
 #> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
 #> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
 #> overwrite.
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>   0.491   0.055   0.508
+#>   0.512   0.055   0.517
 file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
@@ -77,7 +72,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 331.455 122.653  38.447
+#> 324.353 113.478  39.744
 ```
 
 ## 5. Get PCA scores

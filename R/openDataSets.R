@@ -17,8 +17,7 @@ DatasetParquetUrlList <- function() {
     urlList
 }
 
-
-#' Copy remote parquet files into a local DuckDB database file using explicit URLs
+#' Copy remote parquet files into a local DuckDB database file
 #' @param db_path Path to the local DuckDB database file
 #' @param urlList Character vector of parquet URLs
 #' @param table_name Name of the table to create in the DuckDB database
@@ -31,29 +30,29 @@ CopyParquetToDuckDB <- function(
     overwrite = FALSE) {
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path, overwrite = FALSE)
     table_names <- DBI::dbListTables(con)
-    sql <- sprintf(
-        "CREATE TABLE %s AS SELECT * FROM parquet_scan(%s)",
-        table_name,
-        paste0("['", paste(urlList, collapse = "','"), "']")
-    )
     if (!table_name %in% table_names || overwrite) {
+        sql <- sprintf(
+            "INSTALL httpfs; load httpfs;
+             CREATE TABLE %s AS SELECT * FROM read_parquet(%s)",
+            table_name,
+            paste0("['", paste(urlList, collapse = "','"), "']")
+        )
+
         DBI::dbExecute(con, sql)
         message(
-            paste0(
-                "Copied parquet files to DuckDB table '",
-                table_name,
-                "' in database '",
-                db_path,
-                "'."
-            )
+            "Copied parquet files to DuckDB table '",
+            table_name,
+            "' in database '",
+            db_path,
+            "'."
         )
+        # peak at the data
+        DBI::dbDisconnect(con)
     } else {
-        message(paste0("Database file '", db_path, "' already exists. Skipping copy."))
+        message("Database file '", db_path, "' already exists. Skipping copy.")
     }
-    DBI::dbDisconnect(con)
     invisible(db_path)
 }
-
 
 #' Iterate over embeddings as matrix batches from a local DuckDB file
 #' @param chunk_size Number of rows per batch
