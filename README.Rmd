@@ -95,16 +95,21 @@ coffee_anno <- lapply(coffee_json, function(x) {
 }) |> bind_rows()
 
 # Merge
-
 plotDf <- cbind(pc_scores,houba$info)
 names(plotDf)[1:15] <- paste0("PC",1:15)
-plotDf<- plotDf |>
+plotDf <- plotDf |>
   left_join(coffee_anno, by = c("rsid" = "rsid"))
 
-ggplot(plotDf, aes(x = PC1, y = PC2, color = gen)) +
-  geom_point(alpha = 0.7) +
+# Set alpha = 0 for NA genes, 0.7 otherwise
+plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
+
+# Plot: NA genes are fully transparent
+
+ggplot(plotDf, aes(x = PC1, y = PC2, color = gen, alpha = plot_alpha)) +
+  geom_point() +
   labs(title = "PC1 vs PC2 colored by coffee consumption gene annotation") +
-  theme_minimal()
+  theme_minimal() +
+  guides(alpha = "none")
 
 ```
 

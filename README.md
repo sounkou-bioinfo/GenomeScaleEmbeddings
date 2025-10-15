@@ -26,7 +26,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpUPPQph/file8852a459708d0.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmplge4aR/file888746b426b61.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -51,7 +51,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.029   0.003   0.028
+#>   0.028   0.003   0.029
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -68,7 +68,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.567   0.045   0.572
+#>   0.578   0.037   0.572
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -109,7 +109,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 360.033 111.738  55.447
+#> 356.178 115.111  55.185
 ```
 
 ## 5. Get PCA scores
@@ -149,16 +149,21 @@ coffee_anno <- lapply(coffee_json, function(x) {
 }) |> bind_rows()
 
 # Merge
-
 plotDf <- cbind(pc_scores,houba$info)
 names(plotDf)[1:15] <- paste0("PC",1:15)
-plotDf<- plotDf |>
+plotDf <- plotDf |>
   left_join(coffee_anno, by = c("rsid" = "rsid"))
 
-ggplot(plotDf, aes(x = PC1, y = PC2, color = gen)) +
-  geom_point(alpha = 0.7) +
+# Set alpha = 0 for NA genes, 0.7 otherwise
+plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
+
+# Plot: NA genes are fully transparent
+
+ggplot(plotDf, aes(x = PC1, y = PC2, color = gen, alpha = plot_alpha)) +
+  geom_point() +
   labs(title = "PC1 vs PC2 colored by coffee consumption gene annotation") +
-  theme_minimal()
+  theme_minimal() +
+  guides(alpha = "none")
 ```
 
 <img src="docs/README-unnamed-chunk-9-1.png" width="100%" />
