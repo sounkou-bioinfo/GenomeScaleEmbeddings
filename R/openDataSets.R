@@ -141,15 +141,22 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     embeddingFile = gsub("\\.duckdb$", ".houba", dbPath),
     overwrite = FALSE) {
     if (!requireNamespace("houba", quietly = TRUE)) stop("houba package required.")
-    if (file.exists(embeddingFile) && !overwrite) {
-        stop("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
-    }
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = dbPath)
     n <- DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", tableName))$n
-    # Get info column names from table
     infoColNames <- setdiff(DBI::dbListFields(con, tableName), embeddingCol)
+    if (file.exists(embeddingFile) && !overwrite) {
+        # Return the same structure as if we had just written the file
+        embMat <- houba::mmatrix(datatype = "double", nrow = n, ncol = embeddingDim, filename = embeddingFile, readonly = TRUE)
+        dscFile <- houba::descriptor.file(embMat)
+        infoDf <- DBI::dbGetQuery(con, sprintf("SELECT %s FROM %s", paste(infoColNames, collapse = ", "), tableName))
+        DBI::dbDisconnect(con)
+        message("Using existing houba file and info data.")
+        return(structure(
+            list(embeddings = embMat, info = infoDf, houba_file = embeddingFile, descriptor_file = dscFile),
+            class = "HoubaEmbeddings"
+        ))
+    }
     embMat <- houba::mmatrix(datatype = "double", nrow = n, ncol = embeddingDim, filename = embeddingFile, readonly = FALSE)
-    # Create descriptor file for bigmemory compatibility
     dscFile <- houba::descriptor.file(embMat)
     infoDf <- data.frame(matrix(nrow = n, ncol = length(infoColNames)))
     colnames(infoDf) <- infoColNames
