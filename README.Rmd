@@ -77,7 +77,7 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ## 7. Annotate variants with coffee consumption GWAS and plot PC1 vs PC2 by gene
 
 ```{r}
-# Fetch coffee consumption GWAS data
+# Fetch coffee consumption Phenotype data
 query <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/coffee consumption")
 resp <- request(query) |>
   req_headers("Content-Type" = "application/json") |>
@@ -87,32 +87,53 @@ coffee_json <- resp_body_json(resp)
 
 # Extract rsid and gene annotation
 coffee_anno <- lapply(coffee_json, function(x) {
-  data.frame(
-    rsid = x$Variation,
-    gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
-    stringsAsFactors = FALSE
-  )
+  if (!is.null(x$Variation)) {
+    data.frame(
+      rsid = x$Variation,
+      gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+      stringsAsFactors = FALSE
+    )
+  }
 }) |> bind_rows()
 
-# Merge
+# Fetch Preeclampsia Phenotype data
+query_preeclampsia <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/preeclampsia")
+resp_preeclampsia <- request(query_preeclampsia) |>
+  req_headers("Content-Type" = "application/json") |>
+  req_perform()
+preeclampsia_json <- resp_body_json(resp_preeclampsia)
+
+# Extract rsid and gene annotation for Preeclampsia
+preeclampsia_anno <- lapply(preeclampsia_json, function(x) {
+  if (!is.null(x$Variation)) {
+    data.frame(
+      rsid = x$Variation,
+      gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+      stringsAsFactors = FALSE
+    )
+  }
+}) |> bind_rows()
+
+# Merge PCA scores and houba info
 plotDf <- cbind(pc_scores,houba$info)
 names(plotDf)[1:15] <- paste0("PC",1:15)
+
+# Annotate plotDf with coffee and preeclampsia
 plotDf <- plotDf |>
-  left_join(coffee_anno, by = c("rsid" = "rsid"))
+  left_join(coffee_anno, by = c("rsid" = "rsid")) |>
+  left_join(preeclampsia_anno, by = c("rsid" = "rsid"), suffix = c("_coffee", "_preeclampsia"))
 
-# Set alpha = 0 for NA genes, 0.7 otherwise
-plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
+# Subset for coffee and preeclampsia SNPs
+coffee_snps <- subset(plotDf, !is.na(gen_coffee))
+preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))
 
-# Plot: coffee SNPs only, with gene annotation labels
-coffee_snps <- subset(plotDf, !is.na(gen))
+# Plot: coffee SNPs as circles, preeclampsia SNPs as triangles
 
-p <- ggplot(coffee_snps, aes(x = PC1, y = PC2, color = gen)) +
-  geom_point(size = 2, alpha = 0.7) +
-  labs(title = "PC1 vs PC2: coffee SNPs annotated by gene") +
+ggplot() +
+  geom_point(data = coffee_snps, aes(x = PC1, y = PC2, color = gen_coffee), shape = 16, size = 2, alpha = 0.7) +
+  geom_point(data = preeclampsia_snps, aes(x = PC1, y = PC2, color = gen_preeclampsia), shape = 17, size = 3, alpha = 0.7) +
+  labs(title = "PC1 vs PC2: coffee SNPs (circles) and preeclampsia SNPs (triangles)", color = "Gene annotation") +
   theme_minimal()
-
-# Add text labels for gene annotation
-p + geom_text(aes(label = gen), hjust = 0, vjust = 0, size = 2, check_overlap = TRUE)
 ```
 
 ---

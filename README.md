@@ -26,7 +26,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpzD8owR/file88c3743bd89b3.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpBmqLU6/file89598391a2bc5.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -51,7 +51,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.027   0.006   0.029
+#>   0.036   0.002   0.030
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -68,7 +68,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.562   0.044   0.568
+#>   0.558   0.051   0.571
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -109,7 +109,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 361.381 112.571  57.173
+#> 359.715 117.130  55.187
 ```
 
 ## 5. Get PCA scores
@@ -141,32 +141,53 @@ coffee_json <- resp_body_json(resp)
 
 # Extract rsid and gene annotation
 coffee_anno <- lapply(coffee_json, function(x) {
-  data.frame(
-    rsid = x$Variation,
-    gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
-    stringsAsFactors = FALSE
-  )
+  if (!is.null(x$Variation)) {
+    data.frame(
+      rsid = x$Variation,
+      gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+      stringsAsFactors = FALSE
+    )
+  }
 }) |> bind_rows()
 
-# Merge
+# Fetch Preeclampsia GWAS data
+query_preeclampsia <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/preeclampsia")
+resp_preeclampsia <- request(query_preeclampsia) |>
+  req_headers("Content-Type" = "application/json") |>
+  req_perform()
+preeclampsia_json <- resp_body_json(resp_preeclampsia)
+
+# Extract rsid and gene annotation for Preeclampsia
+preeclampsia_anno <- lapply(preeclampsia_json, function(x) {
+  if (!is.null(x$Variation)) {
+    data.frame(
+      rsid = x$Variation,
+      gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+      stringsAsFactors = FALSE
+    )
+  }
+}) |> bind_rows()
+
+# Merge PCA scores and houba info
 plotDf <- cbind(pc_scores,houba$info)
 names(plotDf)[1:15] <- paste0("PC",1:15)
+
+# Annotate plotDf with coffee and preeclampsia
 plotDf <- plotDf |>
-  left_join(coffee_anno, by = c("rsid" = "rsid"))
+  left_join(coffee_anno, by = c("rsid" = "rsid")) |>
+  left_join(preeclampsia_anno, by = c("rsid" = "rsid"), suffix = c("_coffee", "_preeclampsia"))
 
-# Set alpha = 0 for NA genes, 0.7 otherwise
-plotDf$plot_alpha <- ifelse(is.na(plotDf$gen), 0, 0.7)
+# Subset for coffee and preeclampsia SNPs
+coffee_snps <- subset(plotDf, !is.na(gen_coffee))
+preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))
 
-# Plot: coffee SNPs only, with gene annotation labels
-coffee_snps <- subset(plotDf, !is.na(gen))
+# Plot: coffee SNPs as circles, preeclampsia SNPs as triangles
 
-p <- ggplot(coffee_snps, aes(x = PC1, y = PC2, color = gen)) +
-  geom_point(size = 2, alpha = 0.7) +
-  labs(title = "PC1 vs PC2: coffee SNPs annotated by gene") +
+ggplot() +
+  geom_point(data = coffee_snps, aes(x = PC1, y = PC2, color = gen_coffee), shape = 16, size = 2, alpha = 0.7) +
+  geom_point(data = preeclampsia_snps, aes(x = PC1, y = PC2, color = gen_preeclampsia), shape = 17, size = 3, alpha = 0.7) +
+  labs(title = "PC1 vs PC2: coffee SNPs (circles) and preeclampsia SNPs (triangles)", color = "Gene annotation") +
   theme_minimal()
-
-# Add text labels for gene annotation
-p + geom_text(aes(label = gen), hjust = 0, vjust = 0, size = 2, check_overlap = TRUE)
 ```
 
 <img src="docs/README-unnamed-chunk-9-1.png" width="100%" />
