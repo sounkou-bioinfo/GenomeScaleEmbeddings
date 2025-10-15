@@ -144,7 +144,7 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     overwrite = FALSE) {
     if (!requireNamespace("houba", quietly = TRUE)) stop("houba package required.")
     if (file.exists(embeddingFile) && !overwrite) {
-        stop("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
+        warning("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
     }
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = dbPath)
     n <- DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", tableName))$n
@@ -157,7 +157,12 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     colnames(infoDf) <- infoColNames
     idx <- 1
     message(sprintf("Writing %d rows in batches of %d...", n, batchSize))
-    while (idx <= n) {
+    if (file.exists(embeddingFile) && !overwrite) {
+        warning("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
+        # read the infoDf from using duckdb directly
+        infoDf <- DBI::dbGetQuery(con, sprintf("SELECT %s FROM %s", paste(infoColNames, collapse = ", "), tableName))
+    }
+    while (idx <= n && (overwrite || !file.exists(embeddingFile))) {
         rows <- min(batchSize, n - idx + 1)
         query <- sprintf(
             "SELECT %s, %s FROM %s LIMIT %d OFFSET %d",
@@ -227,22 +232,112 @@ infoSummary <- function(infoMat) {
 #' @param center logical, whether to center columns
 #' @param scale logical, whether to scale columns
 #' @param ncomp number of principal components to compute
-#' @return PCA result object from bigPCAcpp
+#' @return List with PCA result object and houbaM big.matrix
 #' @export
-houbaPCA <- function(embMat, center = TRUE, scale = TRUE, ncomp = 10) {
+houbaPCA <- function(embMat = "local_embeddings.houba", center = TRUE, scale = TRUE, ncomp = 15) {
     if (is.character(embMat)) {
         descFile <- paste0(embMat, ".desc")
         if (!file.exists(descFile)) {
             stop("Descriptor file does not exist: ", descFile)
         }
-        embMat <- bigmemory::attach.big.matrix(descFile)
+        houbaM <- bigmemory::attach.big.matrix(descFile)
         message("Attached big.matrix from descriptor file: ", descFile)
-        message("Dimensions: ", paste(dim(embMat), collapse = " x "))
+        message("Dimensions: ", paste(dim(houbaM), collapse = " x "))
     } else {
         if (!inherits(embMat, "big.matrix")) {
             stop("embMat must be a bigmemory::big.matrix or path to descriptor file.")
         }
+        houbaM <- embMat
     }
     message("Running PCA with center=", center, ", scale=", scale, ", ncomp=", ncomp)
-    bigPCAcpp::pca_bigmatrix(embMat, center = center, scale = scale, ncomp = ncomp)
+    pca <- bigPCAcpp::pca_bigmatrix(houbaM, center = center, scale = scale, ncomp = ncomp)
+    list(pca = pca, houbaM = houbaM)
+}
+
+#' Get PCA scores from houbaPCA result
+#' @param houbaPCA_res List returned by houbaPCA (with 'pca' and 'houbaM')
+#' @return Matrix of principal component scores (variants x PCs)
+#' @export
+getPcaScores <- function(houbaPCA_res) {
+    bigPCAcpp::pca_scores_bigmatrix(
+        xpMat = houbaPCA_res$houbaM,
+        rotation = houbaPCA_res$pca$rotation,
+        center = houbaPCA_res$pca$center,
+        scale = houbaPCA_res$pca$scale
+    )
+}
+
+#' Plot spatial correlation between PC scores and genomic position, faceted by chromosome
+#' @param pc_scores Matrix of principal component scores (variants x PCs)
+#' @param info_df Data frame with variant info (must contain 'chrom' and 'pos')
+#' @param pc Which principal component to plot (default: 1)
+#' @export
+plotPCSpatialCorrelation <- function(pc_scores, info_df, pc = 1) {
+    chroms <- as.factor(info_df$chrom)
+    positions <- info_df$pos
+    oldpar <- par(mfrow = c(ceiling(sqrt(length(levels(chroms)))), ceiling(sqrt(length(levels(chroms))))))
+    on.exit(par(oldpar))
+    for (chr in levels(chroms)) {
+        idx <- which(chroms == chr)
+        plot(positions[idx], pc_scores[idx, pc],
+            col = chr, pch = 16,
+            xlab = paste0("Genomic Position (chr ", chr, ")"),
+            ylab = paste0("PC", pc),
+            main = paste0("PC", pc, " vs Position (chr ", chr, ")")
+        )
+    }
+}
+
+#' Compute correlation between PC scores and genomic position, per chromosome
+#' @param pc_scores Matrix of principal component scores (variants x PCs)
+#' @param info_df Data frame with variant info (must contain 'chrom' and 'pos')
+#' @param pc Which principal component to correlate (default: 1)
+#' @param method Correlation method (default: 'spearman')
+#' @return Named vector of correlation values per chromosome
+#' @export
+correlatePCWithPosition <- function(pc_scores, info_df, pc = 1, method = "spearman") {
+    chroms <- as.factor(info_df$chrom)
+    positions <- info_df$pos
+    corrs <- sapply(levels(chroms), function(chr) {
+        idx <- which(chroms == chr)
+        if (length(idx) > 1) {
+            stats::cor(pc_scores[idx, pc], positions[idx], method = method)
+        } else {
+            NA
+        }
+    })
+    names(corrs) <- levels(chroms)
+    corrs
+}
+
+#' Plot PCA dimensions using ggplot2, colored by annotation
+#' @param pc_scores Matrix of principal component scores (variants x PCs)
+#' @param info_df Data frame with variant info (must contain annotation column)
+#' @param annotation_col Name of column in info_df to color by (e.g. 'gwas')
+#' @param dim1 First PC dimension to plot (default: 1)
+#' @param dim2 Second PC dimension to plot (default: 2)
+#' @export
+plotPcaDims <- function(pc_scores, info_df, annotation_col = "chrom", dim1 = 1, dim2 = 2) {
+    if (!requireNamespace("ggplot2", quietly = TRUE)) stop("ggplot2 package required.")
+    df <- data.frame(
+        PC1 = pc_scores[, dim1],
+        PC2 = pc_scores[, dim2],
+        annotation = as.factor(info_df[[annotation_col]])
+    )
+    ggplot2::ggplot(df, ggplot2::aes(x = PC1, y = PC2, color = annotation)) +
+        ggplot2::geom_point(alpha = 0.7) +
+        ggplot2::labs(x = paste0("PC", dim1), y = paste0("PC", dim2), color = annotation_col) +
+        ggplot2::theme_minimal()
+}
+
+#' Attach a houba file and return the bigmemory::big.matrix
+#' @param houba_file Path to houba file (without .desc extension)
+#' @return bigmemory::big.matrix object
+#' @export
+attachHoubaBigMatrix <- function(houba_file) {
+    descFile <- paste0(houba_file, ".desc")
+    if (!file.exists(descFile)) {
+        stop("Descriptor file does not exist: ", descFile)
+    }
+    bigmemory::attach.big.matrix(descFile)
 }

@@ -4,7 +4,12 @@
 \alias{houbaPCA}
 \title{PCA using bigPCAcpp on houba mmatrix or bigmemory::big.matrix}
 \usage{
-houbaPCA(embMat, center = TRUE, scale = TRUE, ncomp = 10)
+houbaPCA(
+  embMat = "local_embeddings.houba",
+  center = TRUE,
+  scale = TRUE,
+  ncomp = 15
+)
 }
 \arguments{
 \item{embMat}{houba mmatrix path or bigmemory::big.matrix}
@@ -16,7 +21,7 @@ houbaPCA(embMat, center = TRUE, scale = TRUE, ncomp = 10)
 \item{ncomp}{number of principal components to compute}
 }
 \value{
-PCA result object from bigPCAcpp
+List with PCA result object and houbaM big.matrix
 }
 \description{
 PCA using bigPCAcpp on houba mmatrix or bigmemory::big.matrix

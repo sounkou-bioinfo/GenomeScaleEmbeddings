@@ -1,0 +1,74 @@
+---
+output: github_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  out.width = "100%"
+)
+```
+
+# GenomeScaleEmbeddings PCA Demo (Real Run)
+
+## Load the package
+
+```{r}
+library(GenomeScaleEmbeddings)
+```
+
+## 1. Peek into remote parquet files
+
+```{r}
+# Use OpenRemoteParquetView to inspect the first few rows
+OpenRemoteParquetView()
+```
+
+## 2. Copy remote parquet files into local DuckDB (overwrite = FALSE recommended for speed)
+
+```{r}
+CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
+file.info("local_embeddings.duckdb")$size
+```
+
+## 3. Write embeddings to houba mmatrix (overwrite = FALSE recommended for speed)
+
+```{r}
+houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
+file.info("local_embeddings.houba")$size
+```
+
+## 4. Run PCA on houba mmatrix
+
+```{r, cache=TRUE, cache.extra=file.mtime("local_embeddings.houba")}
+system.time(
+  pca_res <- houbaPCA("local_embeddings.houba")
+)
+```
+
+## 5. Get PCA scores
+
+```{r}
+pc_scores <- getPcaScores(pca_res)
+object.size(pc_scores)
+```
+
+## 6. Plot PCA dimensions (PC1 vs PC2, colored by chromosome)
+
+```{r}
+plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
+```
+
+## 7. Plot spatial correlation (PC1 vs genomic position, faceted by chromosome)
+
+```{r}
+plotPCSpatialCorrelation(pc_scores, houba$info, pc = 1)
+```
+
+---
+
+- All file sizes are displayed after each step for transparency.
+- Remote parquet files are previewed before local processing.
+- For large datasets, consider subsampling for faster plotting.
+- Use `overwrite = FALSE` for DuckDB and houba steps to avoid slow download and reuse existing files.
