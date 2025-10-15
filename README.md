@@ -26,7 +26,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpBmqLU6/file89598391a2bc5.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmpc6ZQnJ/file8970f1549f2dd.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -51,7 +51,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.036   0.002   0.030
+#>   0.030   0.007   0.029
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -68,7 +68,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.558   0.051   0.571
+#>   0.569   0.047   0.577
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -109,7 +109,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 359.715 117.130  55.187
+#> 364.255 117.939  55.499
 ```
 
 ## 5. Get PCA scores
@@ -131,7 +131,7 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ## 7. Annotate variants with coffee consumption GWAS and plot PC1 vs PC2 by gene
 
 ``` r
-# Fetch coffee consumption GWAS data
+# Fetch coffee consumption Phenotype data
 query <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/coffee consumption")
 resp <- request(query) |>
   req_headers("Content-Type" = "application/json") |>
@@ -150,7 +150,7 @@ coffee_anno <- lapply(coffee_json, function(x) {
   }
 }) |> bind_rows()
 
-# Fetch Preeclampsia GWAS data
+# Fetch Preeclampsia Phenotype data
 query_preeclampsia <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/preeclampsia")
 resp_preeclampsia <- request(query_preeclampsia) |>
   req_headers("Content-Type" = "application/json") |>
