@@ -117,7 +117,6 @@ preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))|>
         unique()
 ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
         unique()
-ckd_snps
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 ggplot() +
   geom_point(data = coffee_snps, aes(x = PC1, y = PC2, color = gen_coffee), shape = 16, size = 2, alpha = 0.7) +
@@ -125,7 +124,7 @@ ggplot() +
   geom_point(data = ckd_snps, aes(x = PC1, y = PC2, color = gen_ckd), shape = 15, size = 3, alpha = 0.7) +
   labs(title = "PC1 vs PC2: coffee (circles), preeclampsia (triangles), CKD (squares)") +
   theme_minimal() +
-  guides(color = "none")
+  theme(legend.position = "none")
 ```
 
 ---
