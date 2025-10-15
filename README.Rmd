@@ -32,7 +32,7 @@ OpenRemoteParquetView()
 ```{r}
 system.time(
 
-CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
+CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = TRUE)
 )
 file.info("local_embeddings.duckdb")$size
 ```
