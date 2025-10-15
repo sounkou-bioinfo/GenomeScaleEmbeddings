@@ -33,7 +33,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmps6ucDx/file8a5ff195dec19.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpAEGH6U/file8a80d14997b6f.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -58,7 +58,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.024   0.007   0.028
+#>   0.026   0.007   0.029
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -75,7 +75,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.581   0.033   0.570
+#>   0.571   0.043   0.572
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -116,7 +116,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 358.806 112.452  54.725
+#> 352.349 115.962  54.777
 ```
 
 ## 5. Get PCA scores
@@ -135,7 +135,7 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 
 <img src="docs/README-unnamed-chunk-8-1.png" width="100%" />
 
-## 7. Annotate variants with coffee consumption GWAS and plot PC1 vs PC2 by gene
+## 7. Annotate variants from ensembl phenotype endpoint plot in the PCA spaces
 
 ``` r
 # Helper function to fetch and extract annotation
@@ -179,16 +179,29 @@ preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))|>
 ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
         unique()
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
-ggplot() +
-  geom_point(data = coffee_snps, aes(x = PC1, y = PC2, color = gen_coffee), shape = 16, size = 2, alpha = 0.7) +
-  geom_point(data = preeclampsia_snps, aes(x = PC1, y = PC2, color = gen_preeclampsia), shape = 17, size = 3, alpha = 0.7) +
-  geom_point(data = ckd_snps, aes(x = PC1, y = PC2, color = gen_ckd), shape = 15, size = 3, alpha = 0.7) +
-  labs(title = "PC1 vs PC2: coffee (circles), preeclampsia (triangles), CKD (squares)") +
-  theme_minimal() +
-  theme(legend.position = "none")
+plot_pc_pair <- function(df, pc_x, pc_y, color_col, shape_val, title) {
+  ggplot(df, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[[color_col]])) +
+    geom_point(shape = shape_val, size = 2, alpha = 0.7) +
+    labs(title = title, x = pc_x, y = pc_y) +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+plot_pc_pair(coffee_snps, "PC1", "PC2", "gen_coffee", 16, "PC1 vs PC2: coffee SNPs")
 ```
 
 <img src="docs/README-unnamed-chunk-9-1.png" width="100%" />
+
+``` r
+plot_pc_pair(coffee_snps, "PC2", "PC3", "gen_coffee", 16, "PC2 vs PC3: coffee SNPs")
+```
+
+<img src="docs/README-unnamed-chunk-9-2.png" width="100%" />
+
+``` r
+plot_pc_pair(coffee_snps, "PC3", "PC4", "gen_coffee", 16, "PC3 vs PC4: coffee SNPs")
+```
+
+<img src="docs/README-unnamed-chunk-9-3.png" width="100%" />
 
 ## Notes
 
