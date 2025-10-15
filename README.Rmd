@@ -77,61 +77,53 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ## 7. Annotate variants with coffee consumption GWAS and plot PC1 vs PC2 by gene
 
 ```{r}
-# Fetch coffee consumption Phenotype data
-query <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/coffee consumption")
-resp <- request(query) |>
-  req_headers("Content-Type" = "application/json") |>
-  req_perform()
+# Helper function to fetch and extract annotation
+gen_phenotype_anno <- function(phenotype_term) {
+  query <- utils::URLencode(paste0("https://rest.ensembl.org/phenotype/term/homo_sapiens/", phenotype_term))
+  resp <- request(query) |>
+    req_headers("Content-Type" = "application/json") |>
+    req_perform()
+  json <- resp_body_json(resp)
+  lapply(json, function(x) {
+    if (!is.null(x$Variation)) {
+      data.frame(
+        rsid = x$Variation,
+        gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+        stringsAsFactors = FALSE
+      )
+    }
+  }) |> bind_rows()
+}
 
-coffee_json <- resp_body_json(resp)
-
-# Extract rsid and gene annotation
-coffee_anno <- lapply(coffee_json, function(x) {
-  if (!is.null(x$Variation)) {
-    data.frame(
-      rsid = x$Variation,
-      gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
-      stringsAsFactors = FALSE
-    )
-  }
-}) |> bind_rows()
-
-# Fetch Preeclampsia Phenotype data
-query_preeclampsia <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/preeclampsia")
-resp_preeclampsia <- request(query_preeclampsia) |>
-  req_headers("Content-Type" = "application/json") |>
-  req_perform()
-preeclampsia_json <- resp_body_json(resp_preeclampsia)
-
-# Extract rsid and gene annotation for Preeclampsia
-preeclampsia_anno <- lapply(preeclampsia_json, function(x) {
-  if (!is.null(x$Variation)) {
-    data.frame(
-      rsid = x$Variation,
-      gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
-      stringsAsFactors = FALSE
-    )
-  }
-}) |> bind_rows()
+# Fetch annotation data frames using helper function
+coffee_anno <- gen_phenotype_anno("coffee consumption")
+preeclampsia_anno <- gen_phenotype_anno("preeclampsia")
+ckd_anno <- gen_phenotype_anno("chronic kidney disease") |> rename(gen_ckd = gen)
 
 # Merge PCA scores and houba info
 plotDf <- cbind(pc_scores,houba$info)
 names(plotDf)[1:15] <- paste0("PC",1:15)
 
-# Annotate plotDf with coffee and preeclampsia
+# Annotate plotDf with coffee, preeclampsia, and CKD
 plotDf <- plotDf |>
   left_join(coffee_anno, by = c("rsid" = "rsid")) |>
-  left_join(preeclampsia_anno, by = c("rsid" = "rsid"), suffix = c("_coffee", "_preeclampsia"))
+  left_join(preeclampsia_anno, by = c("rsid" = "rsid"), suffix = c("_coffee", "_preeclampsia")) |>
+  left_join(ckd_anno, by = c("rsid" = "rsid"), suffix = c("", "_ckd"))
 
-# Subset for coffee and preeclampsia SNPs
-coffee_snps <- subset(plotDf, !is.na(gen_coffee))
-preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))
+# Subset for coffee, preeclampsia, and CKD SNPs
+coffee_snps <- subset(plotDf, !is.na(gen_coffee))|>
+        unique()
+preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))|>
+        unique()
+ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
+        unique()
 
-preeclampsia_snps
+# Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 ggplot() +
   geom_point(data = coffee_snps, aes(x = PC1, y = PC2, color = gen_coffee), shape = 16, size = 2, alpha = 0.7) +
   geom_point(data = preeclampsia_snps, aes(x = PC1, y = PC2, color = gen_preeclampsia), shape = 17, size = 3, alpha = 0.7) +
-  labs(title = "PC1 vs PC2: coffee SNPs (circles) and preeclampsia SNPs (triangles)", color = "Gene annotation") +
+  geom_point(data = ckd_snps, aes(x = PC1, y = PC2, color = gen_ckd), shape = 15, size = 3, alpha = 0.7) +
+  labs(title = "PC1 vs PC2: coffee (circles), preeclampsia (triangles), CKD (squares)", color = "Gene annotation") +
   theme_minimal()
 ```
 
