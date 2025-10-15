@@ -126,8 +126,8 @@ ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 plot_pc_pair <- function(pc_x, pc_y, title) {
 ggplot() +
-  geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_coffee"]]), shape = 16, size = 2, alpha = 0.7) +
-  geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_preeclampsia"]]), shape = 17, size = 2, alpha = 0.7) +
+  geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), shape = 16, size = 2, alpha = 0.7) +
+  geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), shape = 17, size = 2, alpha = 0.7) +
   geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_ckd"]]), shape = 15, size = 2, alpha = 0.7) +
   labs(title = title, x = pc_x, y = pc_y) +
   theme_minimal() +
