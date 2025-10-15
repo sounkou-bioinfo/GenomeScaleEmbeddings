@@ -2,13 +2,11 @@
 % Please edit documentation in R/openDataSets.R
 \name{CopyParquetToDuckDB}
 \alias{CopyParquetToDuckDB}
-\title{Copy remote parquet files into a local DuckDB database file using Hugging Face hf:// wildcard}
+\title{Copy remote parquet files into a local DuckDB database file using explicit URLs}
 \usage{
 CopyParquetToDuckDB(
   db_path = "local_embeddings.duckdb",
-  hf_user = "hong-niu",
-  hf_dataset = "Variant-Foundation-Embeddings",
-  hf_subdir = "train",
+  urlList = DatasetParquetUrlList(),
   table_name = "embeddings",
   overwrite = FALSE
 )
@@ -16,16 +14,12 @@ CopyParquetToDuckDB(
 \arguments{
 \item{db_path}{Path to the local DuckDB database file}
 
-\item{hf_user}{Hugging Face user/org (default: 'hong-niu')}
-
-\item{hf_dataset}{Dataset name (default: 'Variant-Foundation-Embeddings')}
-
-\item{hf_subdir}{Subdirectory in dataset (default: 'train')}
+\item{urlList}{Character vector of parquet URLs}
 
 \item{table_name}{Name of the table to create in the DuckDB database}
 
 \item{overwrite}{Whether to overwrite the existing database}
 }
 \description{
-Copy remote parquet files into a local DuckDB database file using Hugging Face hf:// wildcard
+Copy remote parquet files into a local DuckDB database file using explicit URLs
 }
