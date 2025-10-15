@@ -14,7 +14,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpRDug8x/file86c5f12021efb.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp9A9Zg0/file8701a6fa6851b.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -39,7 +39,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.027   0.006   0.029
+#>   0.020   0.011   0.028
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -49,8 +49,11 @@ file.info("local_embeddings.duckdb")$size
 ``` r
 system.time(
 
-houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
+houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", 
+overwrite = TRUE)
 )
+#> Warning in mk.descriptor.file(object@file, object@dim[1], object@dim[2], :
+#> local_embeddings.houba.desc already exists.
 #> Writing 616386 rows in batches of 100000...
 #> Processed rows 1 to 100000
 #> Processed rows 100001 to 200000
@@ -61,7 +64,7 @@ houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", over
 #> Processed rows 600001 to 616386
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>  37.539  21.087  47.594
+#>  36.859  16.916  42.051
 file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
@@ -76,7 +79,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 363.543 118.628  55.662
+#> 358.400 115.887  55.127
 ```
 
 ## 5. Get PCA scores

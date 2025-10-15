@@ -32,7 +32,7 @@ OpenRemoteParquetView()
 ```{r}
 system.time(
 
-CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = TRUE)
+CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 file.info("local_embeddings.duckdb")$size
 ```
@@ -42,7 +42,8 @@ file.info("local_embeddings.duckdb")$size
 ```{r}
 system.time(
 
-houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
+houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", 
+overwrite = TRUE)
 )
 file.info("local_embeddings.houba")$size
 ```
