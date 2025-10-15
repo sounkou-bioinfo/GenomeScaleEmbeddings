@@ -14,7 +14,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpWYTjuu/file83b1d480293e3.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpsfGI2B/file8568a1327ea1e.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -33,8 +33,13 @@ OpenRemoteParquetView()
 ## 2. Copy remote parquet files into local DuckDB
 
 ``` r
+system.time(
+
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
-#> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
+)
+#> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
+#>    user  system elapsed 
+#>  69.253  24.612 112.208
 file.info("local_embeddings.duckdb")$size
 #> [1] 12128628736
 ```
@@ -42,17 +47,17 @@ file.info("local_embeddings.duckdb")$size
 ## 3. Write embeddings to houba mmatrix
 
 ``` r
+system.time(
+
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
-#> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
-#> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
-#> overwrite.
-#> Warning in mk.descriptor.file(object@file, object@dim[1], object@dim[2], :
-#> local_embeddings.houba.desc already exists.
+)
 #> Writing 616386 rows in batches of 100000...
 #> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
 #> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
 #> overwrite.
 #> Done writing embeddings and info to houba mmatrix.
+#>    user  system elapsed 
+#>   0.504   0.050   0.511
 file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
@@ -67,7 +72,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 357.378 115.402  54.669
+#> 326.543 111.688  39.725
 ```
 
 ## 5. Get PCA scores
@@ -106,22 +111,33 @@ for (i in seq_along(cor_table$Chromosome)) {
   cor_table$Correlation[i] <- ct$estimate
   cor_table$P_value[i] <- ct$p.value
 }
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
+#> Warning in cor(x, y): the standard deviation is zero
 kable(cor_table, digits = 4, caption = "Correlation (and p-value) between PC1 and Genomic Position differences by Chromosome")
 ```
 
 | Chromosome | Correlation | P_value |
 |:-----------|------------:|--------:|
-| 5          |     -0.0036 |  0.2792 |
-| 6          |      0.0051 |  0.1045 |
-| 7          |      0.0046 |  0.1762 |
-| 8          |      0.0060 |  0.0821 |
-| 9          |      0.0012 |  0.7584 |
-| 1          |      0.0016 |  0.8053 |
-| 18         |     -0.0053 |  0.2559 |
-| 19         |      0.0100 |  0.0705 |
-| 20         |     -0.0030 |  0.5444 |
-| 2          |      0.0060 |  0.3085 |
-| 21         |      0.0011 |  0.8923 |
+| 5          |          NA |      NA |
+| 6          |          NA |      NA |
+| 7          |          NA |      NA |
+| 8          |          NA |      NA |
+| 9          |          NA |      NA |
+| 1          |          NA |      NA |
+| 18         |          NA |      NA |
+| 19         |          NA |      NA |
+| 20         |          NA |      NA |
+| 2          |          NA |      NA |
+| 21         |          NA |      NA |
 
 Correlation (and p-value) between PC1 and Genomic Position differences
 by Chromosome
