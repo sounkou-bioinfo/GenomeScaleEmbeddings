@@ -142,7 +142,7 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     overwrite = FALSE) {
     if (!requireNamespace("houba", quietly = TRUE)) stop("houba package required.")
     if (file.exists(embeddingFile) && !overwrite) {
-        warning("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
+        stop("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
     }
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = dbPath)
     n <- DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", tableName))$n
@@ -155,12 +155,7 @@ writeEmbeddingsHoubaFromDuckDB <- function(
     colnames(infoDf) <- infoColNames
     idx <- 1
     message(sprintf("Writing %d rows in batches of %d...", n, batchSize))
-    if (file.exists(embeddingFile) && !overwrite) {
-        warning("Embedding file already exists: ", embeddingFile, ". Use overwrite = TRUE to overwrite.")
-        # read the infoDf from using duckdb directly
-        infoDf <- DBI::dbGetQuery(con, sprintf("SELECT %s FROM %s", paste(infoColNames, collapse = ", "), tableName))
-    }
-    while (idx <= n && (overwrite || !file.exists(embeddingFile))) {
+    while (idx <= n) {
         rows <- min(batchSize, n - idx + 1)
         query <- sprintf(
             "SELECT %s, %s FROM %s LIMIT %d OFFSET %d",
