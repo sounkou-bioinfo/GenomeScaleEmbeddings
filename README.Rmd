@@ -38,20 +38,22 @@ OpenRemoteParquetView()
 
 ```{r}
 system.time(
-
+# can comment this out to skip these
+{
+unlink("local_embeddings.duckdb")
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
-)
+})
 file.info("local_embeddings.duckdb")$size
 ```
 
 ## 3. Write embeddings to houba mmatrix
 
 ```{r}
-system.time(
-
+system.time({
+unlink("local_embeddings.houba")
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", 
 overwrite = FALSE)
-)
+})
 houba
 file.info("local_embeddings.houba")$size
 ```

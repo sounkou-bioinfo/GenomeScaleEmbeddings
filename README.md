@@ -33,7 +33,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpLGL6tS/file8b9fd3f061639.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp5UETN5/file8bed22ff9a582.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -53,33 +53,43 @@ OpenRemoteParquetView()
 
 ``` r
 system.time(
-
+# can comment this out to skip these
+{
+unlink("local_embeddings.duckdb")
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
-)
-#> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
+})
+#> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
 #>    user  system elapsed 
-#>   0.029   0.004   0.029
+#>  78.172  24.039 113.093
 file.info("local_embeddings.duckdb")$size
-#> [1] 12106084352
+#> [1] 12128628736
 ```
 
 ## 3. Write embeddings to houba mmatrix
 
 ``` r
-system.time(
-
+system.time({
+unlink("local_embeddings.houba")
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", 
 overwrite = FALSE)
-)
+})
 #> Warning in mk.descriptor.file(object@file, object@dim[1], object@dim[2], :
 #> local_embeddings.houba.desc already exists.
-#> Using existing houba file and info data.
+#> Writing 616386 rows in batches of 100000...
+#> Processed rows 1 to 100000
+#> Processed rows 100001 to 200000
+#> Processed rows 200001 to 300000
+#> Processed rows 300001 to 400000
+#> Processed rows 400001 to 500000
+#> Processed rows 500001 to 600000
+#> Processed rows 600001 to 616386
+#> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>   0.578   0.046   0.574
+#>  36.294  22.814  48.381
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
-#> A read-only mmatrix with 616386 rows and 3072 cols
+#> A mmatrix with 616386 rows and 3072 cols
 #> data type:  double 
 #> File: local_embeddings.houba 
 #> --- excerpt
@@ -116,7 +126,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 357.203 115.455  55.065
+#> 375.320 138.759  57.482
 ```
 
 ## 5. Get PCA scores
