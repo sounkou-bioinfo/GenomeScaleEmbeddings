@@ -81,8 +81,8 @@ for (i in seq_along(cor_table$Chromosome)) {
   pos_numeric <- as.numeric(as.character(houba$info$pos[idx]))
   pc1 <- pc_scores[idx, 1]
   # Use differences
-  d_pc1 <- abs(diff(pc1))
-  d_pos <- abs(diff(pos_numeric))
+  d_pc1 <- diff(pc1)
+  d_pos <- diff(pos_numeric)
   ct <- cor.test(d_pc1, d_pos, use = "complete.obs")
   cor_table$Correlation[i] <- ct$estimate
   cor_table$P_value[i] <- ct$p.value

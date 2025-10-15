@@ -14,7 +14,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpsfGI2B/file8568a1327ea1e.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpQ5ziQI/file8595a12ac264f.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -37,9 +37,9 @@ system.time(
 
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
-#> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
+#> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>  69.253  24.612 112.208
+#>   0.050   0.003   0.181
 file.info("local_embeddings.duckdb")$size
 #> [1] 12128628736
 ```
@@ -51,13 +51,18 @@ system.time(
 
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
 )
+#> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
+#> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
+#> overwrite.
+#> Warning in mk.descriptor.file(object@file, object@dim[1], object@dim[2], :
+#> local_embeddings.houba.desc already exists.
 #> Writing 616386 rows in batches of 100000...
 #> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
 #> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
 #> overwrite.
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>   0.504   0.050   0.511
+#>   0.491   0.055   0.508
 file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
@@ -72,7 +77,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 326.543 111.688  39.725
+#> 331.455 122.653  38.447
 ```
 
 ## 5. Get PCA scores
@@ -105,8 +110,8 @@ for (i in seq_along(cor_table$Chromosome)) {
   pos_numeric <- as.numeric(as.character(houba$info$pos[idx]))
   pc1 <- pc_scores[idx, 1]
   # Use differences
-  d_pc1 <- abs(diff(pc1))
-  d_pos <- abs(diff(pos_numeric))
+  d_pc1 <- diff(pc1)
+  d_pos <- diff(pos_numeric)
   ct <- cor.test(d_pc1, d_pos, use = "complete.obs")
   cor_table$Correlation[i] <- ct$estimate
   cor_table$P_value[i] <- ct$p.value
