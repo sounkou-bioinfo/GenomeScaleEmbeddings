@@ -127,8 +127,7 @@ plotDf <- plotDf |>
 coffee_snps <- subset(plotDf, !is.na(gen_coffee))
 preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))
 
-# Plot: coffee SNPs as circles, preeclampsia SNPs as triangles
-
+preeclampsia_snps
 ggplot() +
   geom_point(data = coffee_snps, aes(x = PC1, y = PC2, color = gen_coffee), shape = 16, size = 2, alpha = 0.7) +
   geom_point(data = preeclampsia_snps, aes(x = PC1, y = PC2, color = gen_preeclampsia), shape = 17, size = 3, alpha = 0.7) +
