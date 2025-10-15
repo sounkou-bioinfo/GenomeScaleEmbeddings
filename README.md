@@ -14,7 +14,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpVSD7nd/file865d51eb3d3d.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpRDug8x/file86c5f12021efb.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -37,9 +37,9 @@ system.time(
 
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
-#> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
+#> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>  62.799  22.832 101.021
+#>   0.027   0.006   0.029
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -52,12 +52,16 @@ system.time(
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Writing 616386 rows in batches of 100000...
-#> Warning in writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", :
-#> Embedding file already exists: local_embeddings.houba. Use overwrite = TRUE to
-#> overwrite.
+#> Processed rows 1 to 100000
+#> Processed rows 100001 to 200000
+#> Processed rows 200001 to 300000
+#> Processed rows 300001 to 400000
+#> Processed rows 400001 to 500000
+#> Processed rows 500001 to 600000
+#> Processed rows 600001 to 616386
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>   0.503   0.055   0.512
+#>  37.539  21.087  47.594
 file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
@@ -72,7 +76,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 325.420 118.848  39.951
+#> 363.543 118.628  55.662
 ```
 
 ## 5. Get PCA scores
@@ -111,33 +115,22 @@ for (i in seq_along(cor_table$Chromosome)) {
   cor_table$Correlation[i] <- ct$estimate
   cor_table$P_value[i] <- ct$p.value
 }
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
-#> Warning in cor(x, y): the standard deviation is zero
 kable(cor_table, digits = 4, caption = "Correlation (and p-value) between PC1 and Genomic Position differences by Chromosome")
 ```
 
 | Chromosome | Correlation | P_value |
 |:-----------|------------:|--------:|
-| 5          |          NA |      NA |
-| 6          |          NA |      NA |
-| 7          |          NA |      NA |
-| 8          |          NA |      NA |
-| 9          |          NA |      NA |
-| 1          |          NA |      NA |
-| 18         |          NA |      NA |
-| 19         |          NA |      NA |
-| 20         |          NA |      NA |
-| 2          |          NA |      NA |
-| 21         |          NA |      NA |
+| 5          |     -0.0001 |  0.9786 |
+| 6          |      0.0056 |  0.0724 |
+| 7          |      0.0054 |  0.1119 |
+| 8          |      0.0023 |  0.5001 |
+| 9          |     -0.0038 |  0.3210 |
+| 1          |     -0.0053 |  0.4246 |
+| 18         |      0.0001 |  0.9828 |
+| 19         |     -0.0088 |  0.1108 |
+| 20         |     -0.0015 |  0.7599 |
+| 2          |     -0.0022 |  0.7113 |
+| 21         |      0.0046 |  0.5550 |
 
 Correlation (and p-value) between PC1 and Genomic Position differences
 by Chromosome
