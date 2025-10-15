@@ -33,7 +33,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp8RbjDt/file8b04929911da0.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpUHS4c6/file8b2d1b920680.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -58,7 +58,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.026   0.005   0.029
+#>   0.032   0.001   0.029
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -75,7 +75,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.579   0.032   0.570
+#>   0.566   0.048   0.571
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -116,7 +116,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 360.544 118.030  55.114
+#> 359.066 113.503  54.381
 ```
 
 ## 5. Get PCA scores
@@ -127,13 +127,25 @@ object.size(pc_scores)
 #> 73966536 bytes
 ```
 
-## 6. Plot PCA dimensions (PC1 vs PC2, colored by chromosome)
+## 6. Plot PCA dimensions (colored by chromosome)
 
 ``` r
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ```
 
 <img src="docs/README-unnamed-chunk-8-1.png" width="100%" />
+
+``` r
+plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 2, dim2 = 3)
+```
+
+<img src="docs/README-unnamed-chunk-8-2.png" width="100%" />
+
+``` r
+plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 3, dim2 = 4)
+```
+
+<img src="docs/README-unnamed-chunk-8-3.png" width="100%" />
 
 ## 7. Annotate variants from ensembl phenotype endpoint plot in the PCA spaces
 

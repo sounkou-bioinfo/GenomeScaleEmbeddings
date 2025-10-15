@@ -71,10 +71,12 @@ pc_scores <- getPcaScores(pca_res)
 object.size(pc_scores)
 ```
 
-## 6. Plot PCA dimensions (PC1 vs PC2, colored by chromosome)
+## 6. Plot PCA dimensions (colored by chromosome)
 
 ```{r}
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
+plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 2, dim2 = 3)
+plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 3, dim2 = 4)
 ```
 
 ## 7. Annotate variants  from ensembl phenotype endpoint plot in the PCA spaces
