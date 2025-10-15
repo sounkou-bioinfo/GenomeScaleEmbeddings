@@ -33,7 +33,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpUHS4c6/file8b2d1b920680.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmppfBSlV/file8b7e562bbb52.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -58,7 +58,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.032   0.001   0.029
+#>   0.024   0.007   0.028
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -75,7 +75,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.566   0.048   0.571
+#>   0.562   0.052   0.574
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -116,7 +116,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 359.066 113.503  54.381
+#> 360.378 115.586  55.125
 ```
 
 ## 5. Get PCA scores
@@ -190,25 +190,16 @@ preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))|>
         unique()
 ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
         unique()
+
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 plot_pc_pair <- function(pc_x, pc_y, title) {
-  ggplot(coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_coffee"]])) +
-    geom_point(shape = 16, size = 2, alpha = 0.7) +
-    labs(title = title, x = pc_x, y = pc_y) +
-    theme_minimal() +
-    theme(legend.position = "none")
-
-  ggplot(preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_preeclampsia"]])) +
-    geom_point(shape = 17, size = 2, alpha = 0.7) +
-    labs(title = title, x = pc_x, y = pc_y) +
-    theme_minimal() +
-    theme(legend.position = "none")
-
-  ggplot(ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_ckd"]])) +
-    geom_point(shape = 15, size = 2, alpha = 0.7) +
-    labs(title = title, x = pc_x, y = pc_y) +
-    theme_minimal() +
-    theme(legend.position = "none")
+ggplot() +
+  geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_coffee"]]), shape = 16, size = 2, alpha = 0.7) +
+  geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_preeclampsia"]]), shape = 17, size = 2, alpha = 0.7) +
+  geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_ckd"]]), shape = 15, size = 2, alpha = 0.7) +
+  labs(title = title, x = pc_x, y = pc_y) +
+  theme_minimal() +
+  theme(legend.position = "none")
 }
 plot_pc_pair("PC1", "PC2", "PC1 vs PC2: coffee(circles), preeclampsia(triangles), CKD(squares) ")
 ```

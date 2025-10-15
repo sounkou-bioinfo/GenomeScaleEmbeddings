@@ -122,25 +122,16 @@ preeclampsia_snps <- subset(plotDf, !is.na(gen_preeclampsia))|>
         unique()
 ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
         unique()
+
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 plot_pc_pair <- function(pc_x, pc_y, title) {
-  ggplot(coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_coffee"]])) +
-    geom_point(shape = 16, size = 2, alpha = 0.7) +
-    labs(title = title, x = pc_x, y = pc_y) +
-    theme_minimal() +
-    theme(legend.position = "none")
-
-  ggplot(preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_preeclampsia"]])) +
-    geom_point(shape = 17, size = 2, alpha = 0.7) +
-    labs(title = title, x = pc_x, y = pc_y) +
-    theme_minimal() +
-    theme(legend.position = "none")
-
-  ggplot(ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_ckd"]])) +
-    geom_point(shape = 15, size = 2, alpha = 0.7) +
-    labs(title = title, x = pc_x, y = pc_y) +
-    theme_minimal() +
-    theme(legend.position = "none")
+ggplot() +
+  geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_coffee"]]), shape = 16, size = 2, alpha = 0.7) +
+  geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_preeclampsia"]]), shape = 17, size = 2, alpha = 0.7) +
+  geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_ckd"]]), shape = 15, size = 2, alpha = 0.7) +
+  labs(title = title, x = pc_x, y = pc_y) +
+  theme_minimal() +
+  theme(legend.position = "none")
 }
 plot_pc_pair("PC1", "PC2", "PC1 vs PC2: coffee(circles), preeclampsia(triangles), CKD(squares) ")
 plot_pc_pair("PC2", "PC3", "PC2 vs PC3: coffee(circles), preeclampsia(triangles), CKD(squares)")
