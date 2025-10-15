@@ -1,10 +1,11 @@
 
-# GenomeScaleEmbeddings PCA Demo (Real Run)
+# GenomeScaleEmbeddings
 
 ## Load the package
 
 ``` r
 library(GenomeScaleEmbeddings)
+library(patchwork)
 ```
 
 ## 1. Peek into remote parquet files
@@ -13,7 +14,7 @@ library(GenomeScaleEmbeddings)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmpjs5R9g/file820b536befe34.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpvN9HWX/file82b0073fce3a7.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -60,13 +61,13 @@ file.info("local_embeddings.houba")$size
 
 ``` r
 system.time(
-pca_res <- houbaPCA("local_embeddings.houba")
+  pca_res <- houbaPCA("local_embeddings.houba")
 )
 #> Attached big.matrix from descriptor file: local_embeddings.houba.desc
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 358.656 117.157  54.231
+#> 355.975 116.238  54.191
 ```
 
 ## 5. Get PCA scores
@@ -88,7 +89,17 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ## 7. Plot spatial correlation (PC1 vs genomic position, faceted by chromosome)
 
 ``` r
-plotPCSpatialCorrelation(pc_scores, houba$info, pc = 1)
+plots <- lapply(unique(houba$info$chrom), function(chr) {
+  idx <- houba$info$chrom == chr
+  ggplot2::ggplot(data.frame(
+    PC1 = pc_scores[idx, 1],
+    Position = houba$info$pos[idx]
+  ), ggplot2::aes(x = Position, y = PC1)) +
+    ggplot2::geom_point(size = 1.5, alpha = 0.8) +
+    ggplot2::labs(title = paste("PC1 vs Position (chr", chr, ")"), x = paste("Genomic Position (chr", chr, ")"), y = "PC1") +
+    ggplot2::theme_minimal()
+})
+wrap_plots(plots, ncol = 2)
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-9-1.png" width="100%" />

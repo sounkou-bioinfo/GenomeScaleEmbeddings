@@ -10,12 +10,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-# GenomeScaleEmbeddings PCA Demo (Real Run)
+# GenomeScaleEmbeddings
 
 ## Load the package
 
 ```{r}
 library(GenomeScaleEmbeddings)
+library(patchwork)
 ```
 
 ## 1. Peek into remote parquet files
@@ -41,7 +42,7 @@ file.info("local_embeddings.houba")$size
 
 ## 4. Run PCA on houba mmatrix
 
-```{r, cache=TRUE, cache.extra=file.mtime("local_embeddings.houba")}
+```{r}
 system.time(
   pca_res <- houbaPCA("local_embeddings.houba")
 )
@@ -60,10 +61,18 @@ object.size(pc_scores)
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ```
 
-## 7. Plot spatial correlation (PC1 vs genomic position, faceted by chromosome)
+## 7. Print spatial correlations (PC1 vs genomic position, by chromosome)
 
 ```{r}
-plotPCSpatialCorrelation(pc_scores, houba$info, pc = 1)
+library(knitr)
+cor_table <- data.frame(
+  Chromosome = unique(houba$info$chrom),
+  Correlation = sapply(unique(houba$info$chrom), function(chr) {
+    idx <- houba$info$chrom == chr
+    cor(pc_scores[idx, 1], houba$info$pos[idx], use = "complete.obs")
+  })
+)
+kable(cor_table, caption = "Correlation between PC1 and Genomic Position by Chromosome")
 ```
 
 ---
