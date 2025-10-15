@@ -45,6 +45,7 @@ system.time(
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", 
 overwrite = FALSE)
 )
+houba
 file.info("local_embeddings.houba")$size
 ```
 
