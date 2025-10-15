@@ -222,20 +222,19 @@ infoSummary <- function(infoMat) {
 }
 
 
-#' kmeans using houba mmatrix via biganalytics
+#' PCA using bigPCAcpp on houba mmatrix or bigmemory::big.matrix
 #' @param embMat houba mmatrix path or bigmemory::big.matrix
-#' @param centers Number of centers (k)
-#' @param nstart Number of random starts
-#' @param iter.max Maximum number of iterations
-#' @return kmeans result object
+#' @param center logical, whether to center columns
+#' @param scale logical, whether to scale columns
+#' @param ncomp number of principal components to compute
+#' @return PCA result object from bigPCAcpp
 #' @export
-houbaKmeans <- function(embMat, centers = 2, nstart = 1, iter.max = 10) {
+houbaPCA <- function(embMat, center = TRUE, scale = TRUE, ncomp = 10) {
     if (is.character(embMat)) {
-        # check descriptor file exists
-        if (!file.exists(embMat)) {
-            stop("Descriptor file does not exist: ", embMat)
-        }
         descFile <- paste0(embMat, ".desc")
+        if (!file.exists(descFile)) {
+            stop("Descriptor file does not exist: ", descFile)
+        }
         embMat <- bigmemory::attach.big.matrix(descFile)
         message("Attached big.matrix from descriptor file: ", descFile)
         message("Dimensions: ", paste(dim(embMat), collapse = " x "))
@@ -244,6 +243,6 @@ houbaKmeans <- function(embMat, centers = 2, nstart = 1, iter.max = 10) {
             stop("embMat must be a bigmemory::big.matrix or path to descriptor file.")
         }
     }
-    message("Running kmeans with centers=", centers, ", nstart=", nstart, ", iter.max=", iter.max)
-    biganalytics::bigkmeans(embMat, centers = centers, nstart = nstart, iter.max = iter.max)
+    message("Running PCA with center=", center, ", scale=", scale, ", ncomp=", ncomp)
+    bigPCAcpp::pca_bigmatrix(embMat, center = center, scale = scale, ncomp = ncomp)
 }
