@@ -5,7 +5,7 @@
 
 ``` r
 library(GenomeScaleEmbeddings)
-library(patchwork)
+library(knitr)
 ```
 
 ## 1. Peek into remote parquet files
@@ -14,7 +14,7 @@ library(patchwork)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpvN9HWX/file82b0073fce3a7.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpWYTjuu/file83b1d480293e3.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -30,7 +30,7 @@ OpenRemoteParquetView()
 #> # ℹ more rows
 ```
 
-## 2. Copy remote parquet files into local DuckDB (overwrite = FALSE recommended for speed)
+## 2. Copy remote parquet files into local DuckDB
 
 ``` r
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
@@ -39,7 +39,7 @@ file.info("local_embeddings.duckdb")$size
 #> [1] 12128628736
 ```
 
-## 3. Write embeddings to houba mmatrix (overwrite = FALSE recommended for speed)
+## 3. Write embeddings to houba mmatrix
 
 ``` r
 houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", overwrite = FALSE)
@@ -67,7 +67,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 355.975 116.238  54.191
+#> 357.378 115.402  54.669
 ```
 
 ## 5. Get PCA scores
@@ -86,23 +86,45 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 
 <img src="README_files/figure-gfm/unnamed-chunk-8-1.png" width="100%" />
 
-## 7. Plot spatial correlation (PC1 vs genomic position, faceted by chromosome)
+## 7. Print spatial correlations (PC1 vs genomic position, by chromosome)
 
 ``` r
-plots <- lapply(unique(houba$info$chrom), function(chr) {
+cor_table <- data.frame(
+  Chromosome = unique(houba$info$chrom),
+  Correlation = NA,
+  P_value = NA
+)
+for (i in seq_along(cor_table$Chromosome)) {
+  chr <- cor_table$Chromosome[i]
   idx <- houba$info$chrom == chr
-  ggplot2::ggplot(data.frame(
-    PC1 = pc_scores[idx, 1],
-    Position = houba$info$pos[idx]
-  ), ggplot2::aes(x = Position, y = PC1)) +
-    ggplot2::geom_point(size = 1.5, alpha = 0.8) +
-    ggplot2::labs(title = paste("PC1 vs Position (chr", chr, ")"), x = paste("Genomic Position (chr", chr, ")"), y = "PC1") +
-    ggplot2::theme_minimal()
-})
-wrap_plots(plots, ncol = 2)
+  pos_numeric <- as.numeric(as.character(houba$info$pos[idx]))
+  pc1 <- pc_scores[idx, 1]
+  # Use differences
+  d_pc1 <- abs(diff(pc1))
+  d_pos <- abs(diff(pos_numeric))
+  ct <- cor.test(d_pc1, d_pos, use = "complete.obs")
+  cor_table$Correlation[i] <- ct$estimate
+  cor_table$P_value[i] <- ct$p.value
+}
+kable(cor_table, digits = 4, caption = "Correlation (and p-value) between PC1 and Genomic Position differences by Chromosome")
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" width="100%" />
+| Chromosome | Correlation | P_value |
+|:-----------|------------:|--------:|
+| 5          |     -0.0036 |  0.2792 |
+| 6          |      0.0051 |  0.1045 |
+| 7          |      0.0046 |  0.1762 |
+| 8          |      0.0060 |  0.0821 |
+| 9          |      0.0012 |  0.7584 |
+| 1          |      0.0016 |  0.8053 |
+| 18         |     -0.0053 |  0.2559 |
+| 19         |      0.0100 |  0.0705 |
+| 20         |     -0.0030 |  0.5444 |
+| 2          |      0.0060 |  0.3085 |
+| 21         |      0.0011 |  0.8923 |
+
+Correlation (and p-value) between PC1 and Genomic Position differences
+by Chromosome
 
 ------------------------------------------------------------------------
 

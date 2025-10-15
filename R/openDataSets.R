@@ -18,40 +18,47 @@ DatasetParquetUrlList <- function() {
 }
 
 
-#' Copy remote parquet files into a local DuckDB database file
+#' Copy remote parquet files into a local DuckDB database file using Hugging Face hf:// wildcard
 #' @param db_path Path to the local DuckDB database file
-#' @param urlList Character vector of parquet URLs
+#' @param hf_user Hugging Face user/org (default: 'hong-niu')
+#' @param hf_dataset Dataset name (default: 'Variant-Foundation-Embeddings')
+#' @param hf_subdir Subdirectory in dataset (default: 'default/partial-train')
 #' @param table_name Name of the table to create in the DuckDB database
 #' @param overwrite Whether to overwrite the existing database
 #' @export
 CopyParquetToDuckDB <- function(
     db_path = "local_embeddings.duckdb",
-    urlList = DatasetParquetUrlList(),
+    hf_user = "hong-niu",
+    hf_dataset = "Variant-Foundation-Embeddings",
+    hf_subdir = "default/partial-train",
     table_name = "embeddings",
     overwrite = FALSE) {
+    # Use all parquet files in the specified subdirectory
+    hf_url <- sprintf(
+        "hf://datasets/%s/%s@~parquet/%s/*.parquet",
+        hf_user, hf_dataset, hf_subdir
+    )
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = db_path, overwrite = FALSE)
     table_names <- DBI::dbListTables(con)
+    sql <- sprintf(
+        "CREATE TABLE %s AS SELECT * FROM '%s'",
+        table_name, hf_url
+    )
     if (!table_name %in% table_names || overwrite) {
-        sql <- sprintf(
-            "INSTALL httpfs; load httpfs;
-             CREATE TABLE %s AS SELECT * FROM read_parquet(%s)",
-            table_name,
-            paste0("['", paste(urlList, collapse = "','"), "']")
-        )
-
         DBI::dbExecute(con, sql)
         message(
-            "Copied parquet files to DuckDB table '",
-            table_name,
-            "' in database '",
-            db_path,
-            "'."
+            paste0(
+                "Copied parquet files to DuckDB table '",
+                table_name,
+                "' in database '",
+                db_path,
+                "'."
+            )
         )
-        # peak at the data
-        DBI::dbDisconnect(con)
     } else {
-        message("Database file '", db_path, "' already exists. Skipping copy.")
+        message(paste0("Database file '", db_path, "' already exists. Skipping copy."))
     }
+    DBI::dbDisconnect(con)
     invisible(db_path)
 }
 
