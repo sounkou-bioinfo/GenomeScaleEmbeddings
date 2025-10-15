@@ -14,7 +14,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmplkSstS/file85d9665415f18.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpVSD7nd/file865d51eb3d3d.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -39,9 +39,9 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
 #>    user  system elapsed 
-#>  73.564  23.484 109.037
+#>  62.799  22.832 101.021
 file.info("local_embeddings.duckdb")$size
-#> [1] 12128628736
+#> [1] 12106084352
 ```
 
 ## 3. Write embeddings to houba mmatrix
@@ -57,7 +57,7 @@ houba <- writeEmbeddingsHoubaFromDuckDB(dbPath = "local_embeddings.duckdb", over
 #> overwrite.
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>   0.512   0.055   0.517
+#>   0.503   0.055   0.512
 file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
@@ -72,7 +72,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 324.353 113.478  39.744
+#> 325.420 118.848  39.951
 ```
 
 ## 5. Get PCA scores
@@ -89,7 +89,7 @@ object.size(pc_scores)
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" width="100%" />
+<img src="docs/README-unnamed-chunk-8-1.png" width="100%" />
 
 ## 7. Print spatial correlations (PC1 vs genomic position, by chromosome)
 
