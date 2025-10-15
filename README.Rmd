@@ -18,6 +18,10 @@ knitr::opts_chunk$set(
 ```{r}
 library(GenomeScaleEmbeddings)
 library(knitr)
+library(httr2)
+library(jsonlite)
+library(dplyr)
+library(ggplot2)
 ```
 
 ## 1. Peek into remote parquet files
@@ -70,27 +74,38 @@ object.size(pc_scores)
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 ```
 
-## 7. Print spatial correlations (PC1 vs genomic position, by chromosome)
+## 7. Annotate variants with coffee consumption GWAS and plot PC1 vs PC2 by gene
 
 ```{r}
-cor_table <- data.frame(
-  Chromosome = unique(houba$info$chrom),
-  Correlation = NA,
-  P_value = NA
-)
-for (i in seq_along(cor_table$Chromosome)) {
-  chr <- cor_table$Chromosome[i]
-  idx <- houba$info$chrom == chr
-  pos_numeric <- as.numeric(as.character(houba$info$pos[idx]))
-  pc1 <- pc_scores[idx, 1]
-  # Use differences
-  d_pc1 <- diff(pc1)
-  d_pos <- diff(pos_numeric)
-  ct <- cor.test(d_pc1, d_pos, use = "complete.obs")
-  cor_table$Correlation[i] <- ct$estimate
-  cor_table$P_value[i] <- ct$p.value
-}
-kable(cor_table, digits = 4, caption = "Correlation (and p-value) between PC1 and Genomic Position differences by Chromosome")
+# Fetch coffee consumption GWAS data
+query <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/coffee consumption")
+resp <- request(query) |>
+  req_headers("Content-Type" = "application/json") |>
+  req_perform()
+
+coffee_json <- resp_body_json(resp)
+
+# Extract rsid and gene annotation
+coffee_anno <- lapply(coffee_json, function(x) {
+  data.frame(
+    rsid = x$Variation,
+    gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+    stringsAsFactors = FALSE
+  )
+}) |> bind_rows()
+
+# Merge
+
+plotDf <- cbind(pc_scores,houba$info)
+names(plotDf)[1:15] <- paste0("PC",1:15)
+plotDf<- plotDf |>
+  left_join(coffee_anno, by = c("rsid" = "rsid"))
+
+ggplot(plotDf, aes(x = PC1, y = PC2, color = gen)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "PC1 vs PC2 colored by coffee consumption gene annotation") +
+  theme_minimal()
+
 ```
 
 ---

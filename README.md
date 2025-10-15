@@ -6,6 +6,18 @@
 ``` r
 library(GenomeScaleEmbeddings)
 library(knitr)
+library(httr2)
+library(jsonlite)
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
+library(ggplot2)
 ```
 
 ## 1. Peek into remote parquet files
@@ -14,7 +26,7 @@ library(knitr)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpizOfOU/file8797818176bec.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpUPPQph/file8852a459708d0.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -39,7 +51,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 )
 #> Database file 'local_embeddings.duckdb' already exists. Skipping copy.
 #>    user  system elapsed 
-#>   0.031   0.003   0.029
+#>   0.029   0.003   0.028
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -56,7 +68,7 @@ overwrite = FALSE)
 #> local_embeddings.houba.desc already exists.
 #> Using existing houba file and info data.
 #>    user  system elapsed 
-#>   0.555   0.050   0.562
+#>   0.567   0.045   0.572
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -97,7 +109,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 351.989 117.295  54.023
+#> 360.033 111.738  55.447
 ```
 
 ## 5. Get PCA scores
@@ -116,45 +128,40 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
 
 <img src="docs/README-unnamed-chunk-8-1.png" width="100%" />
 
-## 7. Print spatial correlations (PC1 vs genomic position, by chromosome)
+## 7. Annotate variants with coffee consumption GWAS and plot PC1 vs PC2 by gene
 
 ``` r
-cor_table <- data.frame(
-  Chromosome = unique(houba$info$chrom),
-  Correlation = NA,
-  P_value = NA
-)
-for (i in seq_along(cor_table$Chromosome)) {
-  chr <- cor_table$Chromosome[i]
-  idx <- houba$info$chrom == chr
-  pos_numeric <- as.numeric(as.character(houba$info$pos[idx]))
-  pc1 <- pc_scores[idx, 1]
-  # Use differences
-  d_pc1 <- diff(pc1)
-  d_pos <- diff(pos_numeric)
-  ct <- cor.test(d_pc1, d_pos, use = "complete.obs")
-  cor_table$Correlation[i] <- ct$estimate
-  cor_table$P_value[i] <- ct$p.value
-}
-kable(cor_table, digits = 4, caption = "Correlation (and p-value) between PC1 and Genomic Position differences by Chromosome")
+# Fetch coffee consumption GWAS data
+query <- utils::URLencode("https://rest.ensembl.org/phenotype/term/homo_sapiens/coffee consumption")
+resp <- request(query) |>
+  req_headers("Content-Type" = "application/json") |>
+  req_perform()
+
+coffee_json <- resp_body_json(resp)
+
+# Extract rsid and gene annotation
+coffee_anno <- lapply(coffee_json, function(x) {
+  data.frame(
+    rsid = x$Variation,
+    gen = if (!is.null(x$attributes$associated_gene)) x$attributes$associated_gene else NA,
+    stringsAsFactors = FALSE
+  )
+}) |> bind_rows()
+
+# Merge
+
+plotDf <- cbind(pc_scores,houba$info)
+names(plotDf)[1:15] <- paste0("PC",1:15)
+plotDf<- plotDf |>
+  left_join(coffee_anno, by = c("rsid" = "rsid"))
+
+ggplot(plotDf, aes(x = PC1, y = PC2, color = gen)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "PC1 vs PC2 colored by coffee consumption gene annotation") +
+  theme_minimal()
 ```
 
-| Chromosome | Correlation | P_value |
-|:-----------|------------:|--------:|
-| 5          |     -0.0001 |  0.9786 |
-| 6          |      0.0056 |  0.0724 |
-| 7          |      0.0054 |  0.1119 |
-| 8          |      0.0023 |  0.5001 |
-| 9          |     -0.0038 |  0.3210 |
-| 1          |     -0.0053 |  0.4246 |
-| 18         |      0.0001 |  0.9828 |
-| 19         |     -0.0088 |  0.1108 |
-| 20         |     -0.0015 |  0.7599 |
-| 2          |     -0.0022 |  0.7113 |
-| 21         |      0.0046 |  0.5550 |
-
-Correlation (and p-value) between PC1 and Genomic Position differences
-by Chromosome
+<img src="docs/README-unnamed-chunk-9-1.png" width="100%" />
 
 ------------------------------------------------------------------------
 
