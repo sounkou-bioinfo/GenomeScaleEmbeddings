@@ -16,24 +16,16 @@ library(knitr)
 library(httr2)
 library(jsonlite)
 library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 library(ggplot2)
 ```
 
-## 1. Peek into remote parquet files
+## Peek into remote parquet files
 
 ``` r
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp5UETN5/file8bed22ff9a582.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp3zw6b2/file8e2905dcefb91.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -49,23 +41,23 @@ OpenRemoteParquetView()
 #> # ℹ more rows
 ```
 
-## 2. Copy remote parquet files into local DuckDB
+## Copy remote parquet files into local DuckDB
 
 ``` r
 system.time(
-# can comment this out to skip these
 {
+# can comment this out to skip these
 unlink("local_embeddings.duckdb")
 CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 })
 #> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
 #>    user  system elapsed 
-#>  78.172  24.039 113.093
+#>  73.740  23.506 113.390
 file.info("local_embeddings.duckdb")$size
-#> [1] 12128628736
+#> [1] 12106084352
 ```
 
-## 3. Write embeddings to houba mmatrix
+## Write embeddings to houba mmatrix
 
 ``` r
 system.time({
@@ -85,7 +77,7 @@ overwrite = FALSE)
 #> Processed rows 600001 to 616386
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>  36.294  22.814  48.381
+#>  36.934  21.554  47.454
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -116,7 +108,7 @@ file.info("local_embeddings.houba")$size
 #> [1] 15148302336
 ```
 
-## 4. Run PCA on houba mmatrix
+## Run PCA on houba mmatrix
 
 ``` r
 system.time(
@@ -126,10 +118,10 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 375.320 138.759  57.482
+#> 368.701 124.580  57.627
 ```
 
-## 5. Get PCA scores
+## Get PCA scores
 
 ``` r
 pc_scores <- getPcaScores(pca_res)
@@ -137,7 +129,7 @@ object.size(pc_scores)
 #> 73966536 bytes
 ```
 
-## 6. Plot PCA dimensions (colored by chromosome)
+## Plot PCA dimensions (colored by chromosome)
 
 ``` r
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 1, dim2 = 2)
@@ -157,7 +149,7 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 3, dim2 = 4)
 
 <img src="docs/README-unnamed-chunk-8-3.png" width="100%" />
 
-## 7. Annotate variants from ensembl phenotype endpoint plot in the PCA spaces
+## Annotate variants from ensembl phenotype endpoint plot in the PCA spaces
 
 ``` r
 # Helper function to fetch and extract annotation
@@ -203,13 +195,13 @@ ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
 
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 plot_pc_pair <- function(pc_x, pc_y, title) {
-ggplot() +
-  geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), shape = 16, size = 2, alpha = 0.7) +
-  geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), shape = 17, size = 2, alpha = 0.7) +
-  geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]], color = .data[["gen_ckd"]]), shape = 15, size = 2, alpha = 0.7) +
-  labs(title = title, x = pc_x, y = pc_y) +
-  theme_minimal() +
-  theme(legend.position = "none")
+  ggplot() +
+    geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "darkorange", shape = 16, size = 2, alpha = 0.7) +
+    geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "royalblue", shape = 17, size = 2, alpha = 0.7) +
+    geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "forestgreen", shape = 15, size = 2, alpha = 0.7) +
+    labs(title = title, x = pc_x, y = pc_y) +
+    theme_minimal() +
+    theme(legend.position = "none")
 }
 plot_pc_pair("PC1", "PC2", "PC1 vs PC2: coffee(circles), preeclampsia(triangles), CKD(squares) ")
 ```
