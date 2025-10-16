@@ -73,6 +73,8 @@ pc_scores <- getPcaScores(pca_res)
 object.size(pc_scores)
 ```
 
+\newpage
+
 ##  Plot PCA dimensions (colored by chromosome)
 
 ```{r}
@@ -81,7 +83,9 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 2, dim2 = 3)
 plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 3, dim2 = 4)
 ```
 
-##  Annotate variants  from ensembl phenotype endpoint plot in the PCA spaces
+##  Annotate variants  from ensembl phenotype endpoint and plot in the PCA spaces
+
+We fetch some variants for given phenotypes using the ensembl phenotypes endpoint
 
 ```{r}
 # Helper function to fetch and extract annotation
@@ -143,11 +147,20 @@ plot_pc_pair <- function(pc_x, pc_y, title) {
     theme_minimal() +
     theme(legend.position = "none")
 }
+```
+\newpage
+```{r}
 plot_pc_pair("PC1", "PC2", "PC1 vs PC2: coffee(circles), preeclampsia(triangles), CKD(squares) ")
+```
+\newpage
+```{r}
 plot_pc_pair("PC2", "PC3", "PC2 vs PC3: coffee(circles), preeclampsia(triangles), CKD(squares)")
+```
+\newpage
+```{r}
 plot_pc_pair("PC3", "PC4", "PC3 vs PC4: coffee(circles), preeclampsia(triangles), CKD(squares)")
 ```
-
+\newpage
 
 ## Notes
 

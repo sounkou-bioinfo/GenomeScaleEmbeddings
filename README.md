@@ -27,7 +27,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpfA27mt/file8e4d24b77365f.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp6d3veA/file8f1d649a1503.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -54,9 +54,9 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 })
 #> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
 #>    user  system elapsed 
-#>  75.998  23.974 107.257
+#>  75.863  24.119 108.918
 file.info("local_embeddings.duckdb")$size
-#> [1] 12106084352
+#> [1] 12128628736
 ```
 
 ## Write embeddings to houba mmatrix
@@ -79,7 +79,7 @@ overwrite = FALSE)
 #> Processed rows 600001 to 616386
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>  36.360  22.685  48.050
+#>  36.470  23.002  48.410
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -120,7 +120,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 370.177 123.801  56.700
+#> 367.376 119.396  56.281
 ```
 
 ## Get PCA scores
@@ -151,7 +151,10 @@ plotPcaDims(pc_scores, houba$info, annotation_col = "chrom", dim1 = 3, dim2 = 4)
 
 <img src="docs/README-unnamed-chunk-8-3.png" width="100%" />
 
-## Annotate variants from ensembl phenotype endpoint plot in the PCA spaces
+## Annotate variants from ensembl phenotype endpoint and plot in the PCA spaces
+
+We fetch some variants for given phenotypes using the ensembl phenotypes
+endpoint
 
 ``` r
 # Helper function to fetch and extract annotation
@@ -213,22 +216,25 @@ plot_pc_pair <- function(pc_x, pc_y, title) {
     theme_minimal() +
     theme(legend.position = "none")
 }
+```
+
+``` r
 plot_pc_pair("PC1", "PC2", "PC1 vs PC2: coffee(circles), preeclampsia(triangles), CKD(squares) ")
 ```
 
-<img src="docs/README-unnamed-chunk-9-1.png" width="100%" />
+<img src="docs/README-unnamed-chunk-10-1.png" width="100%" />
 
 ``` r
 plot_pc_pair("PC2", "PC3", "PC2 vs PC3: coffee(circles), preeclampsia(triangles), CKD(squares)")
 ```
 
-<img src="docs/README-unnamed-chunk-9-2.png" width="100%" />
+<img src="docs/README-unnamed-chunk-11-1.png" width="100%" />
 
 ``` r
 plot_pc_pair("PC3", "PC4", "PC3 vs PC4: coffee(circles), preeclampsia(triangles), CKD(squares)")
 ```
 
-<img src="docs/README-unnamed-chunk-9-3.png" width="100%" />
+<img src="docs/README-unnamed-chunk-12-1.png" width="100%" />
 
 ## Notes
 
