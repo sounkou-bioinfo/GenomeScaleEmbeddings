@@ -1,12 +1,14 @@
 
 # GenomeScaleEmbeddings
 
-We explore the SNP-level LLM embeddings from the paper “Incorporating
-LLM Embeddings for Variation Across the Human Genome”. We use `duckdb`
-to download the embeddings from huggingFace, save them in
+We explore the SNP-level LLM embeddings from the paper “**Incorporating
+LLM Embeddings for Variation Across the Human Genome**”
+([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1)). We use
+`duckdb` to download the embeddings from huggingFace , save them in
 [`houba`](https://github.com/HervePerdry/houba) memory-mapped matrices,
 and use [`bigPCACpp`](https://github.com/fbertran/bigPCAcpp/) to perform
-PCA and some explorations.
+PCA and some explorations. Please note that these embeddings look to be
+half of what is announced in the paper due to huggingFace limits.
 
 ## Load the packages
 
@@ -25,7 +27,7 @@ library(ggplot2)
 # Use OpenRemoteParquetView to inspect the first few rows
 OpenRemoteParquetView()
 #> # Source:   table<embeddings> [?? x 6]
-#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/Rtmp3zw6b2/file8e2905dcefb91.duckdb]
+#> # Database: DuckDB 1.4.0 [root@Linux 6.8.0-78-generic:R 4.5.1//tmp/RtmpfA27mt/file8e4d24b77365f.duckdb]
 #>    chrom pos       ref_UKB alt_UKB rsid       embedding    
 #>    <chr> <chr>     <chr>   <chr>   <chr>      <list>       
 #>  1 5     148899362 T       G       rs4705280  <dbl [3,072]>
@@ -52,7 +54,7 @@ CopyParquetToDuckDB(db_path = "local_embeddings.duckdb", overwrite = FALSE)
 })
 #> Copied parquet files to DuckDB table 'embeddings' in database 'local_embeddings.duckdb'.
 #>    user  system elapsed 
-#>  73.740  23.506 113.390
+#>  75.998  23.974 107.257
 file.info("local_embeddings.duckdb")$size
 #> [1] 12106084352
 ```
@@ -77,7 +79,7 @@ overwrite = FALSE)
 #> Processed rows 600001 to 616386
 #> Done writing embeddings and info to houba mmatrix.
 #>    user  system elapsed 
-#>  36.934  21.554  47.454
+#>  36.360  22.685  48.050
 houba
 #> Houba mmatrix file: local_embeddings.houba 
 #> Embeddings (houba::mmatrix):
@@ -118,7 +120,7 @@ system.time(
 #> Dimensions: 616386 x 3072
 #> Running PCA with center=TRUE, scale=TRUE, ncomp=15
 #>    user  system elapsed 
-#> 368.701 124.580  57.627
+#> 370.177 123.801  56.700
 ```
 
 ## Get PCA scores
@@ -195,7 +197,15 @@ ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
 
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 plot_pc_pair <- function(pc_x, pc_y, title) {
+  # Identify background SNPs
+  bg_snps <- plotDf[
+    is.na(plotDf$gen_coffee) & is.na(plotDf$gen_preeclampsia) & is.na(plotDf$gen_ckd),
+  ]
+  set.seed(1995)
+  bg_sample <- if (nrow(bg_snps) > 300) bg_snps[sample(nrow(bg_snps), 300), ] else bg_snps
+
   ggplot() +
+    geom_point(data = bg_sample, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "grey60", shape = 1, size = 1.5, alpha = 0.5) +
     geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "darkorange", shape = 16, size = 2, alpha = 0.7) +
     geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "royalblue", shape = 17, size = 2, alpha = 0.7) +
     geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "forestgreen", shape = 15, size = 2, alpha = 0.7) +
@@ -230,6 +240,6 @@ plot_pc_pair("PC3", "PC4", "PC3 vs PC4: coffee(circles), preeclampsia(triangles)
 
 ## References
 
-- The embeddings explored here were published by the group in:
-  - **Incorporating LLM Embeddings for Variation Across the Human
-    Genome** ([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1))
+- The embeddings explored here were published by the workers of the
+  paper **Incorporating LLM Embeddings for Variation Across the Human
+  Genome** ([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1))

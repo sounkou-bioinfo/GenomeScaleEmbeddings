@@ -13,8 +13,8 @@ knitr::opts_chunk$set(
 
 # GenomeScaleEmbeddings
 
-We explore the SNP-level LLM embeddings from the paper "Incorporating LLM Embeddings for Variation Across the Human Genome".
-We use `duckdb` to download the embeddings from huggingFace, save them in [`houba`](https://github.com/HervePerdry/houba) memory-mapped matrices, and use [`bigPCACpp`](https://github.com/fbertran/bigPCAcpp/) to perform PCA and some explorations.
+We explore the SNP-level LLM embeddings from the paper "**Incorporating LLM Embeddings for Variation Across the Human Genome**" ([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1)).
+We use `duckdb` to download the embeddings from huggingFace , save them in [`houba`](https://github.com/HervePerdry/houba) memory-mapped matrices, and use [`bigPCACpp`](https://github.com/fbertran/bigPCAcpp/) to perform PCA and some explorations. Please note that these embeddings look to be half of what is announced in the paper due to huggingFace limits.
 
 ## Load the packages
 
@@ -127,7 +127,15 @@ ckd_snps <- subset(plotDf, !is.na(gen_ckd)) |>
 
 # Plot: coffee SNPs as circles, preeclampsia SNPs as triangles, CKD SNPs as squares
 plot_pc_pair <- function(pc_x, pc_y, title) {
+  # Identify background SNPs
+  bg_snps <- plotDf[
+    is.na(plotDf$gen_coffee) & is.na(plotDf$gen_preeclampsia) & is.na(plotDf$gen_ckd),
+  ]
+  set.seed(1995)
+  bg_sample <- if (nrow(bg_snps) > 300) bg_snps[sample(nrow(bg_snps), 300), ] else bg_snps
+
   ggplot() +
+    geom_point(data = bg_sample, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "grey60", shape = 1, size = 1.5, alpha = 0.5) +
     geom_point(data = coffee_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "darkorange", shape = 16, size = 2, alpha = 0.7) +
     geom_point(data = preeclampsia_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "royalblue", shape = 17, size = 2, alpha = 0.7) +
     geom_point(data = ckd_snps, aes(x = .data[[pc_x]], y = .data[[pc_y]]), color = "forestgreen", shape = 15, size = 2, alpha = 0.7) +
@@ -150,5 +158,4 @@ plot_pc_pair("PC3", "PC4", "PC3 vs PC4: coffee(circles), preeclampsia(triangles)
 
 ## References
 
-- The embeddings explored  here were published by the group in:
-  - **Incorporating LLM Embeddings for Variation Across the Human Genome** ([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1))
+- The embeddings explored  here were published by the workers of the paper **Incorporating LLM Embeddings for Variation Across the Human Genome** ([arXiv:2509.20702v1](https://arxiv.org/html/2509.20702v1))
