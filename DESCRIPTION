@@ -14,5 +14,5 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Remotes: 
-  HervePerdry/houba@ccaedbcf101c79423d914174e3902d9d5b79bcc4,
-  fbertran/bigPCAcpp@0ce68da8e4ff86dee10a1f78e2f5150783fb7ae5
+  HervePerdry/houba,
+  fbertran/bigPCAcpp
